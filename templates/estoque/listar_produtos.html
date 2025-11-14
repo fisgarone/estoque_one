@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+<h1 style="background-color: red; color: white; text-align: center;">ESTE É O LISTAR_PRODUTOS.HTML</h1>
+
+{% block title %}Gerenciamento de Produtos{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/dashboard_estoque.css') }}">
+<style>
+    /* Estilo do Header com Busca */
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .search-bar {
+        flex-grow: 1;
+        position: relative;
+    }
+
+    .search-bar input {
+        width: 100%;
+        padding: 12px 20px 12px 45px;
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--menu-border-light);
+        background-color: var(--menu-bg-light);
+        color: var(--text-light);
+        font-size: 1rem;
+    }
+
+    .dark-theme .search-bar input {
+        border-color: var(--menu-border-dark);
+        background-color: var(--menu-bg-dark);
+        color: var(--text-dark);
+    }
+
+    .search-bar i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary-bright);
+        font-size: 1.2rem;
+    }
+
+    /* Grid de Cards de Produto */
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 25px;
+    }
+
+    .product-card {
+        background: var(--menu-bg-light);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--menu-border-light);
+        box-shadow: var(--card-shadow-light);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dark-theme .product-card {
+        background: var(--menu-bg-dark);
+        border-color: var(--menu-border-dark);
+        box-shadow: var(--card-shadow-dark);
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0, 208, 255, 0.2);
+    }
+
+    .product-card-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--menu-border-light);
+    }
+    .dark-theme .product-card-header { border-color: var(--menu-border-dark); }
+
+    .product-card-header h3 {
+        margin: 0;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.3rem;
+        color: var(--text-light-contrast);
+    }
+    .dark-theme .product-card-header h3 { color: var(--text-dark); }
+
+    .product-card-header .sku {
+        font-size: 0.8rem;
+        color: var(--primary-bright);
+        font-weight: bold;
+    }
+    .dark-theme .product-card-header .sku { color: var(--primary-dark); }
+
+    .product-card-body {
+        padding: 20px;
+        flex-grow: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .info-item { text-align: center; }
+    .info-item .label { font-size: 0.8rem; color: var(--text-light-contrast); margin-bottom: 5px; }
+    .dark-theme .info-item .label { color: var(--text-dark); opacity: 0.7; }
+    .info-item .value { font-size: 1.5rem; font-weight: 600; font-family: 'Space Grotesk', sans-serif; }
+
+    .status-bar {
+        height: 8px;
+        background-color: #eee;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    .dark-theme .status-bar { background-color: rgba(255,255,255,0.1); }
+
+    .status-fill {
+        height: 100%;
+        width: 0%; /* Será definido via JS */
+        transition: width 0.5s ease;
+    }
+    .status-ok .status-fill { background-color: var(--success-color); }
+    .status-alerta .status-fill { background-color: var(--warning-color); }
+    .status-critico .status-fill { background-color: var(--error-color); }
+
+    .product-card-footer {
+        padding: 15px 20px;
+        background: rgba(0,0,0,0.02);
+        border-top: 1px solid var(--menu-border-light);
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+    }
+    .dark-theme .product-card-footer {
+        background: rgba(255,255,255,0.02);
+        border-color: var(--menu-border-dark);
+    }
+
+    .action-btn {
+        color: var(--primary-bright);
+        font-size: 1.2rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .action-btn:hover { color: var(--accent-light); transform: scale(1.2); }
+    .dark-theme .action-btn { color: var(--primary-dark); }
+    .dark-theme .action-btn:hover { color: var(--accent-dark); }
+
+    /* Botão Flutuante */
+    .fab {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(45deg, var(--primary-bright), var(--accent-light));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.8rem;
+        text-decoration: none;
+        box-shadow: 0 10px 25px rgba(0, 208, 255, 0.4);
+        transition: all 0.3s ease;
+        z-index: 1050;
+    }
+    .fab:hover {
+        transform: scale(1.1) rotate(15deg);
+        box-shadow: 0 15px 30px rgba(255, 62, 128, 0.5);
+    }
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 40px;
+        gap: 8px;
+    }
+    .pagination a, .pagination span {
+        color: var(--text-light-contrast);
+        padding: 10px 15px;
+        text-decoration: none;
+        border-radius: var(--border-radius-sm);
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+    .dark-theme .pagination a, .dark-theme .pagination span {
+        color: var(--text-dark);
+    }
+    .pagination a:hover {
+        border-color: var(--primary-bright);
+        color: var(--primary-bright);
+    }
+    .dark-theme .pagination a:hover {
+        border-color: var(--primary-dark);
+        color: var(--primary-dark);
+    }
+    .pagination .active {
+        background: var(--primary-bright);
+        color: white;
+        font-weight: bold;
+    }
+    .dark-theme .pagination .active {
+        background: var(--primary-dark);
+    }
+    .pagination .disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{# -------- Macros locais: truncar em 4 casas -------- #}
+{% macro fmt4(v) -%}
+    {%- set n = (v if v is not none else 0) | float -%}
+    {%- set v2 = ((n * 10000) | int) / 10000.0 -%}
+    {{ "%.4f"|format(v2) }}
+{%- endmacro %}
+
+<div class="dashboard-container">
+    <!-- ... (header, search bar, mensagens flash - tudo igual) ... -->
+    <div class="header-actions">
+        <h1 class="dashboard-title" style="margin-bottom: 0;">Produtos</h1>
+        <div class="search-bar">
+            <i class="ri-search-line"></i>
+            <input type="text" id="searchInput" placeholder="Buscar por nome ou SKU...">
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="notification show {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="product-grid" id="productGrid">
+        <!-- AQUI A MUDANÇA: iteramos sobre 'produtos.items' -->
+        {% for produto in produtos.items %}
+        <div class="product-card" data-nome="{{ produto.nome|lower }}" data-sku="{{ produto.sku|lower }}">
+            <!-- ... (conteúdo do card permanece o mesmo) ... -->
+            <div class="product-card-header">
+                <h3>{{ produto.nome }}</h3>
+                <span class="sku">SKU: {{ produto.sku }}</span>
+            </div>
+            <div class="product-card-body">
+                <div class="info-item">
+                    <div class="label">Estoque Atual</div>
+                    <div class="value">{{ fmt4(produto.quantidade_atual) }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="label">Custo Total</div>
+                    <div class="value">R$ {{ "%.2f"|format((produto.quantidade_atual or 0) * (produto.custo_unitario or 0)) }}</div>
+                </div>
+            </div>
+            <div class="product-card-footer">
+                <a href="{{ url_for('estoque.detalhe_produto', id=produto.id) }}" class="action-btn" title="Ver Detalhes e Gráfico">
+                    <i class="ri-line-chart-line"></i>
+                </a>
+                <a href="{{ url_for('estoque.editar_produto', id=produto.id) }}" class="action-btn" title="Editar Produto">
+                    <i class="ri-pencil-line"></i>
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <p>Nenhum produto cadastrado.</p>
+        {% endfor %}
+    </div>
+
+    <!-- BLOCO DE NAVEGAÇÃO DA PAGINAÇÃO -->
+    <nav class="pagination">
+        <!-- Link para a Página Anterior -->
+        <a href="{{ url_for('estoque.listar_produtos', page=produtos.prev_num) if produtos.has_prev else '#' }}"
+           class="{{ 'disabled' if not produtos.has_prev }}">
+            &laquo; Anterior
+        </a>
+
+        <!-- Links para as Páginas -->
+        {% for page_num in produtos.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                <a href="{{ url_for('estoque.listar_produtos', page=page_num) }}"
+                   class="{{ 'active' if page_num == produtos.page else '' }}">
+                    {{ page_num }}
+                </a>
+            {% else %}
+                <span class="disabled">...</span>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Link para a Próxima Página -->
+        <a href="{{ url_for('estoque.listar_produtos', page=produtos.next_num) if produtos.has_next else '#' }}"
+           class="{{ 'disabled' if not produtos.has_next }}">
+            Próxima &raquo;
+        </a>
+    </nav>
+
+    <!-- Botão Flutuante para Adicionar Produto -->
+    <a href="{{ url_for('estoque.adicionar_produto') }}" class="fab" title="Adicionar Novo Produto">
+        <i class="ri-add-line"></i>
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const productGrid = document.getElementById('productGrid');
+    const paginationNav = document.querySelector('.pagination');
+    let searchTimeout;
+
+    // Trunca para 4 casas (não arredonda)
+    function trunc4(x) {
+        const n = Number(x) || 0;
+        return Math.trunc(n * 10000) / 10000;
+    }
+
+    // Função para buscar produtos na API (compatível com sua API atual)
+    function buscarProdutos(query = '', page = 1) {
+        productGrid.style.opacity = '0.5';
+
+        // Envia tanto q quanto query (compat)
+        const url = `{{ url_for('estoque.api_buscar_produtos') }}?q=${encodeURIComponent(query)}&query=${encodeURIComponent(query)}&page=${page}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                productGrid.innerHTML = '';
+                // Aceita {produtos:[...]} ou uma lista direta [...]
+                const lista = Array.isArray(data) ? data : (data.produtos || []);
+
+                if (lista.length > 0) {
+                    lista.forEach(prod => {
+                        const id   = prod.id;
+                        const nome = prod.nome || '';
+                        const sku  = prod.sku  || '';
+
+                        const qtd  = trunc4(prod.quantidade_atual || 0);
+                        const cmp  = Number(prod.custo_unitario || 0);
+                        const custoTotal = (qtd * cmp);
+
+                        // Formatações
+                        const qtdFmt  = trunc4(qtd).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+                        const custoFmt= custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                        // URLs (construídas pelo id)
+                        const urlDetalhe = "{{ url_for('estoque.detalhe_produto', id=0) }}".replace('0', id);
+                        const urlEditar  = "{{ url_for('estoque.editar_produto', id=0) }}".replace('0', id);
+
+                        const cardHtml = `
+                            <div class="product-card" data-nome="${(nome||'').toLowerCase()}" data-sku="${(sku||'').toLowerCase()}">
+                                <div class="product-card-header">
+                                    <h3>${nome}</h3>
+                                    <span class="sku">SKU: ${sku}</span>
+                                </div>
+                                <div class="product-card-body">
+                                    <div class="info-item">
+                                        <div class="label">Estoque Atual</div>
+                                        <div class="value">${qtdFmt}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="label">Custo Total</div>
+                                        <div class="value">R$ ${custoFmt}</div>
+                                    </div>
+                                </div>
+                                <div class="product-card-footer">
+                                    <a href="${urlDetalhe}" class="action-btn" title="Ver Detalhes e Gráfico"><i class="ri-line-chart-line"></i></a>
+                                    <a href="${urlEditar}" class="action-btn" title="Editar Produto"><i class="ri-pencil-line"></i></a>
+                                </div>
+                            </div>
+                        `;
+                        productGrid.insertAdjacentHTML('beforeend', cardHtml);
+                    });
+                } else {
+                    productGrid.innerHTML = '<p>Nenhum produto encontrado para esta busca.</p>';
+                }
+
+                // Paginacao: se sua API devolver um objeto paginacao, usa; senão mantém a existente
+                if (data.paginacao) {
+                    renderizarPaginacao(data.paginacao, query);
+                }
+
+                productGrid.style.opacity = '1';
+            })
+            .catch(error => {
+                console.error('Erro ao buscar produtos:', error);
+                productGrid.innerHTML = '<p>Ocorreu um erro ao carregar os produtos. Tente novamente.</p>';
+                productGrid.style.opacity = '1';
+            });
+    }
+
+    function renderizarPaginacao(paginacao, query) {
+        if (!paginacao || paginacao.total_pages <= 1) return;
+
+        let html = '';
+        html += `<a href="#" data-page="${paginacao.prev_num}" class="page-link ${!paginacao.has_prev ? 'disabled' : ''}">&laquo; Anterior</a>`;
+
+        for (let i = 1; i <= paginacao.total_pages; i++) {
+            html += `<a href="#" data-page="${i}" class="page-link ${i === paginacao.page ? 'active' : ''}">${i}</a>`;
+        }
+
+        html += `<a href="#" data-page="${paginacao.next_num}" class="page-link ${!paginacao.has_next ? 'disabled' : ''}">Próxima &raquo;</a>`;
+
+        paginationNav.innerHTML = html;
+
+        document.querySelectorAll('.pagination .page-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!this.classList.contains('disabled')) {
+                    const page = this.getAttribute('data-page');
+                    buscarProdutos(query, page);
+                }
+            });
+        });
+    }
+
+    // Busca com debounce
+    searchInput.addEventListener('keyup', function() {
+        clearTimeout(searchTimeout);
+        const query = searchInput.value;
+        searchTimeout = setTimeout(() => {
+            buscarProdutos(query, 1);
+        }, 300);
+    });
+
+    // Paginacao inicial (server-side) vira AJAX sem quebrar o link
+    document.querySelectorAll('.pagination a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!this.classList.contains('disabled')) {
+                const url = new URL(this.href);
+                const page = url.searchParams.get('page');
+                buscarProdutos(searchInput.value, page);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

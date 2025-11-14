@@ -1,0 +1,36 @@
+<!-- /templates/home/dashboard_home.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard Principal{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">Dashboard Principal do Sistema</h1>
+    </div>
+    <p class="text-muted">Bem-vindo ao seu centro de controle. Em breve, este painel exibirá resumos de todos os módulos do seu ERP.</p>
+
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-card-title">Módulo de Estoque</div>
+            <div class="stat-card-value">Ativo</div>
+            <div class="stat-card-description">Pronto para gerenciar produtos, inventários e entradas.</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-title">Módulo NF-e</div>
+            <div class="stat-card-value">Próximo Passo</div>
+            <div class="stat-card-description">Pronto para ser desenvolvido.</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-title">Módulo Vendas</div>
+            <div class="stat-card-value">Em Breve</div>
+            <div class="stat-card-description">Integração com marketplaces.</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-title">Módulo Financeiro</div>
+            <div class="stat-card-value">Em Breve</div>
+            <div class="stat-card-description">Controle de contas a pagar e receber.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

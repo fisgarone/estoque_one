@@ -1,0 +1,5 @@
+flask_sqlalchemy
+flask_babel
+tzdata
+selenium
+aiohttp

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Importar por Planilha{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nfe/importador.css') }}">
+<style>
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: white;
+        backdrop-filter: blur(5px);
+    }
+
+    .loading-spinner {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        animation: spin 1s linear infinite;
+    }
+
+    .success-check {
+        font-size: 4rem;
+        color: var(--success-color);
+        margin-bottom: 1rem;
+    }
+
+    .file-info {
+        background: rgba(0, 208, 255, 0.1);
+        padding: 15px;
+        border-radius: 12px;
+        margin: 15px 0;
+        border-left: 4px solid var(--primary-bright);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <i class="ri-loader-4-line loading-spinner"></i>
+    <p>Processando sua planilha, aguarde...</p>
+</div>
+
+<div class="page-wrap">
+    <div class="card-modern">
+        <h1><i class="ri-upload-cloud-2-line"></i> Importação por Planilha</h1>
+
+        <p class="hint">
+            Importe dados de notas fiscais usando nosso modelo padronizado.
+            <strong>Garanta que sua planilha segue o formato correto</strong> para evitar erros.
+        </p>
+
+        <!-- Card de informações importantes -->
+        <div style="background: linear-gradient(135deg, var(--primary-bright), var(--accent-light)); color: white; padding: 20px; border-radius: 12px; margin: 20px 0;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="ri-lightbulb-flash-line" style="font-size: 2rem;"></i>
+                <div>
+                    <h3 style="margin: 0 0 5px 0; color: white;">Use o Modelo Oficial</h3>
+                    <p style="margin: 0; opacity: 0.9;">Baixe nosso modelo para garantir que todos os campos obrigatórios estão no formato correto.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a class="btn-primary" href="{{ url_for('importador.baixar_modelo') }}">
+                <i class="ri-download-line"></i>
+                <span>Baixar Modelo Oficial (.xlsx)</span>
+            </a>
+        </div>
+
+        <!-- Mensagens de flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin: 20px 0;">
+                    {% for category, message in messages %}
+                        <div class="notification {{ category }}" style="display: block; margin: 10px 0;">
+                            <i class="ri-{{ 'error-warning-line' if category == 'error' else 'information-line' if category == 'info' else 'check-line' }}"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('importador.preview') }}" enctype="multipart/form-data" id="uploadForm">
+            <div class="row">
+                <div class="field">
+                    <label for="fornecedor">
+                        <i class="ri-user-line"></i> Fornecedor *
+                    </label>
+                    <input type="text" id="fornecedor" name="fornecedor" placeholder="Ex.: FISGAR DISTRIBUIDORA" required
+                           value="{{ request.form.get('fornecedor', '') }}">
+                </div>
+                <div class="field">
+                    <label for="origem">
+                        <i class="ri-file-list-line"></i> Origem *
+                    </label>
+                    <select id="origem" name="origem" required>
+                        <option value="MAN" {% if request.form.get('origem', 'MAN') == 'MAN' %}selected{% endif %}>Importação Manual</option>
+                        <option value="XLSX" {% if request.form.get('origem') == 'XLSX' %}selected{% endif %}>Planilha Excel</option>
+                        <option value="PDF" {% if request.form.get('origem') == 'PDF' %}selected{% endif %}>PDF Digitalizado</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>
+                    <i class="ri-file-excel-line"></i> Planilha *
+                </label>
+                <div class="dropzone" id="dropzone">
+                    <i class="ri-upload-cloud-2-line" id="dropzoneIcon"></i>
+                    <div class="dropzone-text" id="dropzoneText">Clique ou arraste sua planilha aqui</div>
+                    <div class="dropzone-filename dropzone-hint" id="dropzoneFilename">Nenhum arquivo selecionado</div>
+                    <div class="dropzone-hint">Formatos: .xlsx, .xls, .csv (até 10MB)</div>
+                    <input type="file" id="file-input" name="arquivo" accept=".xlsx,.xls,.csv" required>
+                </div>
+            </div>
+
+            <!-- Informações do arquivo selecionado -->
+            <div id="fileInfo" class="file-info" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="ri-file-info-line" style="color: var(--primary-bright);"></i>
+                    <div>
+                        <strong id="fileName"></strong>
+                        <div id="fileSize" style="font-size: 0.9em; opacity: 0.8;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    <i class="ri-eye-line"></i>
+                    <span>Pré-visualizar Importação</span>
+                </button>
+                <a href="{{ url_for('importador.upload') }}" class="btn-ghost">
+                    <i class="ri-refresh-line"></i>
+                    <span>Limpar</span>
+                </a>
+            </div>
+        </form>
+
+        <!-- Guia rápido -->
+        <div style="margin-top: 40px; padding: 25px; background: rgba(0, 208, 255, 0.05); border-radius: 16px; border: 1px solid rgba(0, 208, 255, 0.2);">
+            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="ri-guide-line"></i> Formato da Planilha
+            </h3>
+
+            <div class="row">
+                <div class="field" style="flex: 1;">
+                    <h4 style="color: var(--primary-bright);">Colunas Obrigatórias</h4>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li><strong>SKU</strong> - Código único do produto</li>
+                        <li><strong>Nome</strong> - Descrição completa</li>
+                        <li><strong>Unidade_Compra</strong> - UN, CX, PCT, etc.</li>
+                        <li><strong>Quantidade_Compra</strong> - Quantidade total</li>
+                        <li><strong>Valor_Unitario_Compra</strong> - Preço unitário</li>
+                    </ul>
+                </div>
+
+                <div class="field" style="flex: 1;">
+                    <h4 style="color: var(--accent-light);">Colunas Opcionais</h4>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li><strong>IPI_percentual</strong> - % do IPI (ex: 7.5)</li>
+                        <li><strong>Valor_IPI</strong> - Valor total do IPI</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
+                <strong>💡 Dica:</strong> O sistema reconhece variações de nomes como "Código", "Descrição", "Preço Unitário", etc.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/nfe/importador.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const fileInput = document.getElementById('file-input');
+    const dropzone = document.getElementById('dropzone');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const dropzoneIcon = document.getElementById('dropzoneIcon');
+    const dropzoneText = document.getElementById('dropzoneText');
+    const dropzoneFilename = document.getElementById('dropzoneFilename');
+
+    // Atualizar informações do arquivo
+    function updateFileInfo(file) {
+        if (file) {
+            const size = (file.size / (1024 * 1024)).toFixed(2);
+            fileName.textContent = file.name;
+            fileSize.textContent = `${size} MB`;
+            fileInfo.style.display = 'block';
+
+            // Atualizar dropzone
+            dropzoneIcon.className = 'ri-file-excel-line';
+            dropzoneIcon.style.color = 'var(--success-color)';
+            dropzoneText.textContent = 'Arquivo pronto para importação';
+            dropzoneFilename.textContent = file.name;
+        }
+    }
+
+    // Evento de change do file input
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            updateFileInfo(this.files[0]);
+        }
+    });
+
+    // Drag and drop
+    ['dragenter', 'dragover'].forEach(evt => {
+        dropzone.addEventListener(evt, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('hover');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+        dropzone.addEventListener(evt, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('hover');
+        });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        const file = e.dataTransfer.files[0];
+        if (file && (file.name.toLowerCase().endsWith('.xlsx') ||
+                     file.name.toLowerCase().endsWith('.xls') ||
+                     file.name.toLowerCase().endsWith('.csv'))) {
+            fileInput.files = e.dataTransfer.files;
+            updateFileInfo(file);
+            showNotification('Planilha carregada com sucesso!', 'success');
+        } else {
+            showNotification('Selecione um arquivo .xlsx, .xls ou .csv', 'error');
+        }
+    });
+
+    // Validação do formulário
+    form.addEventListener('submit', function(e) {
+        console.log('=== VALIDANDO FORMULÁRIO ===');
+
+        // Validações básicas
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            showNotification('Selecione uma planilha para importar', 'error');
+            return false;
+        }
+
+        const fornecedor = document.getElementById('fornecedor').value.trim();
+        if (!fornecedor) {
+            e.preventDefault();
+            showNotification('Informe o nome do fornecedor', 'error');
+            return false;
+        }
+
+        // Verificar tamanho do arquivo (max 10MB)
+        const file = fileInput.files[0];
+        if (file.size > 10 * 1024 * 1024) {
+            e.preventDefault();
+            showNotification('Arquivo muito grande. Máximo 10MB.', 'error');
+            return false;
+        }
+
+        console.log('✅ Formulário válido - enviando...');
+
+        // Loading state
+        loadingOverlay.style.display = 'flex';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i> <span>Processando...</span>';
+
+        return true;
+    });
+});
+
+// CSS para animações
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

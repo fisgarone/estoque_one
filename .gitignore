@@ -1,0 +1,14 @@
+# Bancos de dados - NUNCA vão pro git
+*.db
+*.db-journal
+instance/
+
+# Lixo de Python
+__pycache__/
+*.pyc
+
+# Config local / IDE
+.env
+.env.*
+.vscode/
+.idea/

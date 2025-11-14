@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Produtos Sem Giro{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">Produtos Sem Giro</h1>
+        <p class="page-subtitle">
+            Estes produtos têm estoque positivo mas não tiveram nenhuma venda nos últimos <strong>{{ periodo_dias }} dias</strong>.
+
+
+            O valor total parado destes itens é de <strong>R$ {{ "{:,.2f}".format(valor_total_parado).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>.
+        </p>
+        <a href="{{ url_for('estoque.dashboard') }}" class="btn btn-secondary">
+            <i class="ri-arrow-left-line"></i> Voltar ao Dashboard
+        </a>
+    </div>
+
+    <div class="table-responsive-container">
+        <table class="table-modern">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>SKU</th>
+                    <th>Estoque Atual</th>
+                    <th>Custo Unit.</th>
+                    <th>Valor Parado</th>
+                    <th>Data Criação</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if produtos %}
+                    {% for produto in produtos %}
+                    <tr>
+                        <td><strong>{{ produto.nome }}</strong></td>
+                        <td>{{ produto.sku }}</td>
+                        <td>{{ produto.quantidade_atual }}</td>
+                        <td>R$ {{ "%.2f"|format(produto.custo_unitario) }}</td>
+                        <td><strong>R$ {{ "%.2f"|format(produto.quantidade_atual * produto.custo_unitario) }}</strong></td>
+                        <td>{{ produto.data_criacao.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <a href="{{ url_for('estoque.detalhe_produto', id=produto.id) }}" class="btn-action" title="Ver Detalhes">
+                                <i class="ri-eye-line"></i>
+                            </a>
+                            <a href="{{ url_for('estoque.editar_produto', id=produto.id) }}" class="btn-action" title="Editar Produto">
+                                <i class="ri-pencil-line"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">
+                            <div class="empty-state">
+                                <i class="ri-verified-badge-line"></i>
+                                <h4>Parabéns!</h4>
+                                <p>Nenhum produto com estoque está parado no período selecionado.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

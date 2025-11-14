@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Inventário{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/inventario.css', v='3.0') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-container inventario-page">
+    <div class="main-content-container">
+        <!-- CABEÇALHO DA PÁGINA -->
+        <div class="page-header">
+            <h1 class="page-title">Gestão de Inventário</h1>
+            <button id="show-form-btn" class="btn-primary-gradient">
+                <i class="ri-add-line"></i> Iniciar Novo Inventário
+            </button>
+        </div>
+
+        <!-- TABELA DE INVENTÁRIOS -->
+        <table class="table-professional">
+            <thead>
+                <tr>
+                    <th>Nome do Inventário</th>
+                    <th>Status</th>
+                    <th>Responsável</th>
+                    <th>Data de Criação</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if inventarios %}
+                    {% for inv in inventarios %}
+                    <tr>
+                        <td><strong>{{ inv.nome }}</strong></td>
+                        <td>
+                            <span class="status-badge status-{{ inv.status.lower().replace(' ', '-') }}">
+                                {{ inv.status }}
+                            </span>
+                        </td>
+                        <td>{{ inv.responsavel or 'Não definido' }}</td>
+                        <td>{{ inv.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            {% if inv.status == 'Em Andamento' %}
+                                <a href="{{ url_for('estoque.contagem_inventario', id=inv.id) }}" class="btn-action" title="Continuar Contagem"><i class="ri-play-circle-line"></i></a>
+                                <form action="{{ url_for('estoque.cancelar_inventario', id=inv.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja cancelar este inventário?');">
+                                    <button type="submit" class="btn-action btn-danger" title="Cancelar"><i class="ri-close-circle-line"></i></button>
+                                </form>
+                            {% elif inv.status == 'Concluido' %}
+                                <a href="{{ url_for('estoque.relatorio_inventario', id=inv.id) }}" class="btn-action" title="Ver Relatório">
+                                    <i class="ri-eye-line"></i>
+                                </a>
+                            {% else %}
+                                <span>-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px;">
+                            <p>Nenhum inventário encontrado. Clique em "Iniciar Novo Inventário" para começar.</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- FORMULÁRIO DE NOVO INVENTÁRIO (INLINE) -->
+        <div id="new-inventory-form" class="new-inventory-form-container">
+            <div class="new-inventory-form-header">
+                <h2>Iniciar Novo Inventário Físico</h2>
+                <i id="close-form-btn" class="ri-close-line close-icon"></i>
+            </div>
+            <form action="{{ url_for('estoque.inventarios') }}" method="POST">
+                <div class="new-inventory-form-body">
+                    <div class="form-grid">
+                        <label for="nome">Nome do Inventário *</label>
+                        <div>
+                            <input type="text" id="nome" name="nome" class="form-control" placeholder="Ex: Inventário Geral - Set/2025" required>
+                            <small>Dê um nome claro para identificar este evento de contagem.</small>
+                        </div>
+                        <label for="responsavel">Responsável</label>
+                        <input type="text" id="responsavel" name="responsavel" class="form-control" placeholder="Nome do colaborador">
+                        <label for="descricao">Descrição</label>
+                        <textarea id="descricao" name="descricao" class="form-control" rows="2" placeholder="Alguma observação importante?"></textarea>
+                    </div>
+                </div>
+                <div class="new-inventory-form-footer">
+                    <button type="button" id="cancel-form-btn" class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Iniciar e Ir para Contagem</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showBtn = document.getElementById('show-form-btn');
+    const formContainer = document.getElementById('new-inventory-form');
+    const closeBtn = document.getElementById('close-form-btn');
+    const cancelBtn = document.getElementById('cancel-form-btn');
+
+    function toggleForm(show) {
+        if (show) {
+            formContainer.style.display = 'block';
+            showBtn.style.display = 'none';
+        } else {
+            formContainer.style.display = 'none';
+            showBtn.style.display = 'inline-flex';
+        }
+    }
+
+    if(showBtn) showBtn.addEventListener('click', () => toggleForm(true));
+    if(closeBtn) closeBtn.addEventListener('click', () => toggleForm(false));
+    if(cancelBtn) cancelBtn.addEventListener('click', () => toggleForm(false));
+});
+</script>
+{% endblock %}

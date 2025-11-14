@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+<h1 style="background-color: green; color: white; text-align: center;">ESTE É O DETALHE_PRODUTO.HTML</h1>
+
+{% block title %}Detalhe: {{ produto.nome }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/dashboard_estoque.css') }}">
+<style>
+    /* Estilos para os botões de filtro de período */
+    .period-filter {
+        display: flex;
+        gap: 10px;
+    }
+    .period-filter a {
+        text-decoration: none;
+        padding: 8px 15px;
+        border-radius: var(--border-radius-sm);
+        color: var(--text-light-contrast);
+        border: 1px solid var(--menu-border-light);
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .dark-theme .period-filter a {
+        color: var(--text-dark);
+        border-color: var(--menu-border-dark);
+    }
+    .period-filter a:hover {
+        border-color: var(--primary-bright);
+        color: var(--primary-bright);
+    }
+    .dark-theme .period-filter a:hover {
+        border-color: var(--primary-dark);
+        color: var(--primary-dark);
+    }
+    .period-filter a.active {
+        background-color: var(--primary-bright);
+        color: white;
+        border-color: var(--primary-bright);
+    }
+    .dark-theme .period-filter a.active {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{# -------- Macros: truncar para no MÁX. 4 casas (sem arredondar) -------- #}
+{% macro fmt4(v) -%}
+    {%- set n = (v if v is not none else 0) | float -%}
+    {%- set t = ((n * 10000) | int) / 10000.0 -%}
+    {%- set s = ("%0.4f" | format(t)) -%}
+    {# remove zeros à direita e ponto final #}
+    {%- set out = s -%}
+    {%- for _ in range(4) -%}
+        {%- if out.endswith('0') -%}{%- set out = out[:-1] -%}{%- endif -%}
+    {%- endfor -%}
+    {%- if out.endswith('.') -%}{%- set out = out[:-1] -%}{%- endif -%}
+    {{ out }}
+{%- endmacro %}
+
+{% macro fmt4_br(v) -%}
+    {{ fmt4(v).replace('.', ',') }}
+{%- endmacro %}
+
+<div class="dashboard-container">
+    <h1 class="dashboard-title">
+        <a href="{{ url_for('estoque.listar_produtos') }}" style="text-decoration: none; color: inherit;" title="Voltar para a lista">
+            <i class="ri-arrow-left-line"></i>
+        </a>
+        {{ produto.nome }}
+    </h1>
+    <span class="sku" style="font-size: 1rem; color: var(--primary-bright); font-weight: bold; margin-top: -20px; display: block; margin-bottom: 30px;">
+        SKU: {{ produto.sku }}
+    </span>
+
+    <!-- Cards de Informação do Produto -->
+    <div class="cards-grid">
+        <div class="card">
+            <div class="card-icon"><i class="ri-stack-line"></i></div>
+            <div class="card-content">
+                <span class="card-title">Estoque Atual</span>
+                <span class="card-value">{{ fmt4_br(produto.quantidade_atual) }}</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-icon"><i class="ri-alert-line"></i></div>
+            <div class="card-content">
+                <span class="card-title">Ponto de Reposição</span>
+                <span class="card-value">{{ produto.ponto_reposicao }}</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-icon"><i class="ri-shield-check-line"></i></div>
+            <div class="card-content">
+                <span class="card-title">Estoque de Segurança</span>
+                <span class="card-value">{{ produto.estoque_seguranca }}</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-icon"><i class="ri-truck-line"></i></div>
+            <div class="card-content">
+                <span class="card-title">Lead Time Fornecedor</span>
+                <span class="card-value">{{ produto.lead_time_dias }} dias</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARDS DE PREVISÃO DE DEMANDA COM FILTROS -->
+    <div class="charts-grid" style="margin-top: 30px;">
+        <div class="chart-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <h2 class="chart-title" style="margin: 0;">Previsão de Demanda</h2>
+                <div class="period-filter">
+                    <a href="{{ url_for('estoque.detalhe_produto', id=produto.id, periodo=30) }}"
+                       class="{{ 'active' if periodo_selecionado == 30 else '' }}">30d</a>
+                    <a href="{{ url_for('estoque.detalhe_produto', id=produto.id, periodo=60) }}"
+                       class="{{ 'active' if periodo_selecionado == 60 else '' }}">60d</a>
+                    <a href="{{ url_for('estoque.detalhe_produto', id=produto.id, periodo=90) }}"
+                       class="{{ 'active' if periodo_selecionado == 90 else '' }}">90d</a>
+                </div>
+            </div>
+            <div class="cards-grid" style="margin-bottom: 0; margin-top: 20px;">
+                <div class="card">
+                    <div class="card-icon"><i class="ri-calculator-line"></i></div>
+                    <div class="card-content">
+                        <span class="card-title">Consumo Médio Diário</span>
+                        <span class="card-value">{{ fmt4_br(consumo_medio_diario) }}</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><i class="ri-hourglass-line"></i></div>
+                    <div class="card-content">
+                        <span class="card-title">Estoque Cobre (dias)</span>
+                        <span class="card-value">{{ "%.0f"|format(dias_para_ruptura) }}</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><i class="ri-calendar-close-line"></i></div>
+                    <div class="card-content">
+                        <span class="card-title">Data de Ruptura Estimada</span>
+                        <span class="card-value" style="font-size: 1.5rem;">
+                            {% if data_ruptura_estimada %}
+                                {{ data_ruptura_estimada.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                --
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Fluxo de Estoque -->
+    <div class="chart-container" style="margin-top: 30px;">
+        <h2 class="chart-title">Fluxo de Estoque (Gráfico Dente de Serra)</h2>
+        <canvas id="fluxoEstoqueChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('fluxoEstoqueChart').getContext('2d');
+    const isDarkMode = document.body.classList.contains('dark-theme');
+
+    const chartData = {
+        labels: {{ chart_labels|tojson }},
+        datasets: [{
+            label: 'Quantidade em Estoque',
+            data: {{ chart_data|tojson }},
+            borderColor: isDarkMode ? '#00f0ff' : '#00bfff',
+            backgroundColor: isDarkMode ? 'rgba(0, 240, 255, 0.1)' : 'rgba(0, 191, 255, 0.1)',
+            fill: true,
+            stepped: true,
+            tension: 0.1
+        },
+        {
+            label: 'Ponto de Reposição',
+            data: Array({{ chart_labels|length }}).fill({{ produto.ponto_reposicao }}),
+            borderColor: isDarkMode ? '#ff9900' : '#ffaa00',
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+        },
+        {
+            label: 'Estoque de Segurança',
+            data: Array({{ chart_labels|length }}).fill({{ produto.estoque_seguranca }}),
+            borderColor: isDarkMode ? '#ff2d4d' : '#ff3e5f',
+            pointRadius: 0,
+            fill: false
+        }]
+    };
+
+    new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: isDarkMode ? '#e0e0e0' : '#1a237e'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: isDarkMode ? '#e0e0e0' : '#1a237e' },
+                    grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }
+                },
+                x: {
+                    ticks: { color: isDarkMode ? '#e0e0e0' : '#1a237e' },
+                    grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

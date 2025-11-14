@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório: {{ inventario.nome }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/inventario.css', v='2.0') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-container inventario-page">
+    <div class="main-content-container">
+        <!-- CABEÇALHO DA PÁGINA -->
+        <div class="contagem-header">
+            <div class="contagem-title-section">
+                <a href="{{ url_for('estoque.inventarios') }}" class="back-link"><i class="ri-arrow-left-line"></i> Voltar para Gestão</a>
+                <h1 class="page-title">Relatório de Inventário</h1>
+                <p>Análise do evento: <strong>{{ inventario.nome }}</strong> | Concluído em: <strong>{{ inventario.data_conclusao.strftime('%d/%m/%Y') if inventario.data_conclusao else 'N/A' }}</strong></p>
+            </div>
+        </div>
+
+        <!-- CARDS DE RESUMO DO RELATÓRIO -->
+        <div class="summary-stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-title">Balanço Final (Sobra - Perda)</div>
+                <div class="stat-card-value {{ 'positive' if resumo.balanco_final > 0 else 'negative' if resumo.balanco_final < 0 else '' }}">
+                    {{ "R$ {:,.2f}".format(resumo.balanco_final)|replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Itens com Divergência</div>
+                <div class="stat-card-value">{{ resumo.total_itens_divergentes }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Custo Total das Perdas</div>
+                <div class="stat-card-value negative">
+                    {{ "R$ {:,.2f}".format(resumo.total_custo_perda)|replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Custo Total das Sobras</div>
+                <div class="stat-card-value positive">
+                    {{ "R$ {:,.2f}".format(resumo.total_custo_sobra)|replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                </div>
+            </div>
+        </div>
+
+        <!-- TABELA DE ANÁLISE DE DIVERGÊNCIAS -->
+        <h2 class="page-title" style="font-size: 1.5rem; margin-top: 40px; margin-bottom: 20px;">Análise Detalhada das Divergências</h2>
+
+        {% if not itens_divergentes %}
+            <div class="empty-state" style="padding: 40px; text-align: center; background-color: #f8f9fa; border-radius: 12px;">
+                <i class="ri-check-double-line" style="font-size: 3rem; color: var(--inv-success);"></i>
+                <h4 style="margin-top: 15px;">Inventário Perfeito!</h4>
+                <p>Nenhuma divergência foi encontrada neste inventário.</p>
+            </div>
+        {% else %}
+            {% for item in itens_divergentes %}
+            <div class="divergence-card">
+                <div class="product-info">
+                    <h4>{{ item.produto.nome }}</h4>
+                    <p>SKU: {{ item.produto.sku }}</p>
+                    <div class="divergence-summary">
+                        <span>Sistema: {{ item.quantidade_sistema }}</span>
+                        <span>Contado: {{ item.quantidade_contada }}</span>
+                        <span class="divergencia-badge {{ 'positivo' if item.divergencia > 0 else 'negativo' }}">
+                            Divergência: {{ item.divergencia }}
+                        </span>
+                    </div>
+                </div>
+                <div class="ai-analysis">
+                    <h5><i class="ri-robot-line"></i> Análise do Assistente IA</h5>
+                    <div class="analysis-content placeholder">
+                        <div class="spinner"></div>
+                        <p>Analisando dados... Em breve, a IA fornecerá a causa provável e as ações sugeridas aqui.</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Estilos específicos para o card de divergência */
+.divergence-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    background-color: #fff;
+    border: 1px solid var(--inv-border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.04);
+}
+.product-info h4 { margin: 0 0 5px 0; font-size: 1.2rem; }
+.product-info p { margin: 0 0 15px 0; color: var(--inv-text-light); }
+.divergence-summary { display: flex; gap: 15px; align-items: center; }
+.divergence-summary span { font-weight: 600; }
+.ai-analysis h5 { margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px; }
+.ai-analysis .analysis-content.placeholder {
+    background-color: #f8fafc;
+    border: 1px dashed #dde6f1;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: var(--inv-text-light);
+}
+.ai-analysis .spinner {
+    width: 24px; height: 24px;
+    border: 3px solid #dde6f1;
+    border-top-color: var(--inv-primary-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px auto;
+}
+</style>
+{% endblock %}

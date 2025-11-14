@@ -1,0 +1,74 @@
+/* Herda a identidade do base.html via CSS vars */
+.import-shell { display:flex; flex-direction:column; gap:18px; }
+
+.import-bar{
+  position: sticky; top:10px; z-index:5; display:flex; justify-content:space-between; align-items:center;
+  padding:12px; background:rgba(224,247,255,0.5); border:1px solid var(--menu-border-light);
+  border-radius:var(--border-radius); backdrop-filter:blur(6px); box-shadow:var(--card-shadow-light);
+}
+.dark-theme .import-bar{
+  background:rgba(2,6,23,0.4); border-color:var(--menu-border-dark); box-shadow:var(--card-shadow-dark);
+}
+
+.btnx{ padding:10px 14px; border-radius:12px; border:1px solid rgba(0,0,0,0.12); background:#fff; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:8px;}
+.dark-theme .btnx{ background:rgba(255,255,255,0.06); color:var(--text-dark); border-color:rgba(255,255,255,0.15);}
+.btnx.ghost{ background:transparent; }
+.btnx.primary{ background:linear-gradient(45deg, var(--primary-bright), var(--accent-light)); color:#fff; border:none; }
+
+.dropzone{
+  border:2px dashed var(--primary-bright); border-radius:14px; padding:18px; text-align:center;
+  background:rgba(0,208,255,0.06);
+}
+.dark-theme .dropzone{ border-color:var(--primary-dark); background:rgba(0,240,255,0.06); }
+.dropzone.dragover{ box-shadow:0 0 0 3px rgba(0,208,255,0.25) inset; }
+
+.meta-pills{ display:flex; flex-wrap:wrap; gap:8px; }
+.pill{
+  display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+  background:rgba(0,208,255,0.12); border:1px solid rgba(0,208,255,0.25); font-weight:600;
+}
+.dark-theme .pill{ background:rgba(0,240,255,0.12); border-color:rgba(0,240,255,0.25); color:var(--text-dark); }
+
+.card{
+  border-radius:var(--border-radius); padding:20px; box-shadow:var(--card-shadow-light);
+  background:var(--menu-bg-light); border:1px solid var(--menu-border-light);
+}
+.dark-theme .card{ background:var(--menu-bg-dark); border-color:var(--menu-border-dark); box-shadow:var(--card-shadow-dark); }
+.grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* Campos flutuantes */
+.field{ position:relative; }
+.field .float{
+  width:100%; padding:14px 12px 10px; border-radius:12px; border:1px solid rgba(0,0,0,0.12); background:#fff;
+}
+.dark-theme .field .float{ background:rgba(255,255,255,0.06); color:var(--text-dark); border-color:rgba(255,255,255,0.15);}
+.field label{
+  position:absolute; left:12px; top:10px; transition:all .18s ease; pointer-events:none; opacity:.8;
+}
+.field .float:focus + label,
+.field .float:not(:placeholder-shown) + label{
+  top:-8px; left:10px; background:var(--menu-bg-light); padding:0 6px; font-size:.8rem; opacity:1;
+  color:var(--primary-bright);
+}
+.dark-theme .field .float:focus + label,
+.dark-theme .field .float:not(:placeholder-shown) + label{
+  background:var(--menu-bg-dark); color:var(--primary-dark);
+}
+
+/* Tabela */
+.table-wrap{ overflow:auto; border-radius:12px; border:1px solid rgba(0,0,0,0.05); margin-top:14px; }
+.dark-theme .table-wrap{ border-color:rgba(255,255,255,0.08); }
+table.kit{ width:100%; border-collapse:collapse; font-size:.95rem; }
+table.kit thead th{
+  position:sticky; top:0; z-index:1; background:linear-gradient(180deg, rgba(0,208,255,.10), transparent);
+  padding:10px; text-align:left; font-weight:700; border-bottom:1px solid rgba(0,0,0,.08);
+}
+.dark-theme table.kit thead th{ background:linear-gradient(180deg, rgba(0,240,255,.12), transparent); border-color:rgba(255,255,255,.08); }
+table.kit td{ padding:8px; border-bottom:1px dashed rgba(0,0,0,.06); }
+.dark-theme table.kit td{ border-color:rgba(255,255,255,.06); }
+table.kit input{
+  width:100%; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,.12); background:#fff;
+}
+.dark-theme table.kit input{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.15); color:var(--text-dark); }
+
+.actions-end{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }

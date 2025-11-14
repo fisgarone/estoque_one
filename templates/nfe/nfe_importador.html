@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Importador de NF (Tela Nova){% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nfe_importador.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="import-shell">
+  <!-- Barra sticky -->
+  <div class="import-bar">
+    <div class="left">
+      <button class="btnx ghost" id="btn-scan"><i class="ri-folder-open-line"></i> Ler da pasta_xml</button>
+
+      <label class="btnx ghost">
+        <i class="ri-upload-2-line"></i> Selecionar arquivo
+        <input id="file-input" type="file" accept=".xml,.pdf,.png,.jpg,.jpeg,.tif,.tiff" hidden>
+      </label>
+
+      <a class="btnx ghost" href="{{ url_for('nfe_importador.modelo_planilha') }}">
+        <i class="ri-download-2-line"></i> Modelo (XLSX)
+      </a>
+      <label class="btnx ghost">
+        <i class="ri-table-line"></i> Importar Planilha
+        <input id="planilha-input" type="file" accept=".xlsx,.csv" hidden>
+      </label>
+    </div>
+    <div class="right">
+      <button class="btnx primary" id="btn-save"><i class="ri-save-3-line"></i> Salvar & Processar</button>
+    </div>
+  </div>
+
+  <!-- Dropzone -->
+  <div id="dropzone" class="dropzone">
+    Arraste e solte um arquivo <b>XML/PDF/Imagem</b> ou <b>Planilha</b> aqui, ou use os botões acima.
+  </div>
+
+  <!-- Metadados (pílulas) -->
+  <div id="meta-pills" class="meta-pills" style="display:none;"></div>
+
+  <!-- Card com campos e tabela -->
+  <div class="card">
+    <div class="grid-2">
+      <div class="field">
+        <input type="text" id="fornecedor" class="float" placeholder=" ">
+        <label for="fornecedor">Fornecedor (opcional)</label>
+      </div>
+      <div class="field">
+        <input type="text" id="observacao" class="float" placeholder=" ">
+        <label for="observacao">Observação</label>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="kit" id="tbl-itens">
+        <thead>
+          <tr>
+            <th>SKU</th><th>Descrição</th><th>Un.</th><th>Qtd</th>
+            <th>Vlr Unit.</th><th>% IPI</th><th>NCM</th><th>CFOP</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- linhas geradas dinamicamente -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions-end">
+      <button class="btnx ghost" id="btn-add"><i class="ri-add-line"></i> Adicionar linha</button>
+      <button class="btnx primary" id="btn-save-bottom"><i class="ri-save-3-line"></i> Salvar & Processar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/nfe_importador.js') }}"></script>
+{% endblock %}

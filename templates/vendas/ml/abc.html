@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Curva ABC — Anúncios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/abc.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="ml-page">
+  <!-- Cabeçalho -->
+  <div class="card ml-header">
+    <div class="ml-title-wrap">
+      <a class="ml-brand" href="https://www.mercadolivre.com.br" target="_blank" rel="noopener">
+        <img src="{{ url_for('static', filename='images/ml_logo.png') }}" alt="Mercado Livre">
+      </a>
+      <h1 class="ml-title">Curva ABC — Anúncios</h1>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="ml-toolbar card">
+    <div class="ml-toolbar-row">
+      <div class="field">
+        <label>Conta</label>
+        <select id="f-conta"><option value="">Todas</option></select>
+      </div>
+
+      <div class="field">
+        <label>De</label>
+        <input type="date" id="f-start">
+      </div>
+
+      <div class="field">
+        <label>Até</label>
+        <input type="date" id="f-end">
+      </div>
+
+      <div class="field">
+        <label>Modo ABC</label>
+        <select id="f-modo">
+          <option value="lucro">Lucro (R$)</option>
+          <option value="faturamento">Faturamento (R$)</option>
+          <option value="unidades">Unidades</option>
+          <option value="margem">Margem ponderada</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Classe</label>
+        <div id="f-classes" class="chip-group" data-mode="single">
+          <button class="chip active" data-cls="all">Todos</button>
+          <button class="chip" data-cls="A">A</button>
+          <button class="chip" data-cls="B">B</button>
+          <button class="chip" data-cls="C">C</button>
+        </div>
+      </div>
+
+      <div class="field grow">
+        <label>Buscar (SKU, MLB, Título)</label>
+        <input type="text" id="f-q" placeholder="Digite e Enter">
+      </div>
+
+      <div class="field">
+        <button id="btn-aplicar" class="btn primary">Aplicar</button>
+      </div>
+
+      <div class="field actions-right">
+        <button id="btn-export-csv"  class="btn primary outline">Exportar CSV</button>
+        <button id="btn-export-xlsx" class="btn primary">Exportar XLSX</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico Pareto -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Pareto (por anúncio)</h3>
+    </div>
+    <div class="card-body">
+      <canvas id="chart-abc"></canvas>
+      <div id="abc-empty" class="empty-msg" style="display:none;">Sem dados para o período selecionado.</div>
+    </div>
+  </div>
+
+  <!-- Gráfico por Classe (filtro) -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Gráfico por Classe (filtro acima)</h3>
+    </div>
+    <div class="card-body">
+      <canvas id="chart-abc-cls"></canvas>
+    </div>
+  </div>
+
+  <!-- Tabela ABC (ordenável) -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Tabela ABC</h3>
+    </div>
+    <div class="card-body table-wrap">
+      <table id="tbl-abc" class="sortable">
+        <thead>
+          <tr>
+            <th data-key="sku">SKU</th>
+            <th data-key="mlb">MLB</th>
+            <th data-key="titulo">Título</th>
+            <th data-key="unidades" data-type="num">Unidades</th>
+            <th data-key="faturamento_rs" data-type="num">Faturamento (R$)</th>
+            <th data-key="lucro_rs" data-type="num">Lucro (R$)</th>
+            <th data-key="margem_pct" data-type="pct">Margem (%)</th>
+            <th data-key="frete_seller_rs" data-type="num">Frete do Seller (R$)</th>
+            <th data-key="frete_pct" data-type="pct">Frete/Bruto (%)</th>
+            <th data-key="pct_acum" data-type="pct">Acumulado (%)</th>
+            <th data-key="classe">Classe</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/vendas/ml/abc.js') }}"></script>
+{% endblock %}

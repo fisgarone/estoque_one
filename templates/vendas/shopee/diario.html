@@ -1,0 +1,566 @@
+{% extends "base.html" %}
+{% block title %}Shopee – Vendas do Dia{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ===== Escopo local, azul celeste dominante ===== */
+:root { --brand-blue:#0ea5e9; }
+.diario-wrap{padding:24px}
+.diario-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.diario-actions{display:flex;gap:8px;align-items:center}
+.diario-head h1{margin:0;font-weight:800;color:var(--brand-blue)}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}
+.filter{display:flex;flex-direction:column;gap:6px}
+.filters .form-control,.filters .form-select{min-width:170px;padding:.55rem .75rem;border-radius:12px;background:var(--menu-bg-light);border:1px solid var(--menu-border-light)}
+.dark-theme .filters .form-control,.dark-theme .filters .form-select{background:var(--menu-bg-dark);border:1px solid var(--menu-border-dark);color:var(--text-dark)}
+.quick{display:flex;gap:8px}
+.btn-chip{border:1px solid var(--brand-blue);color:var(--brand-blue);background:transparent;padding:.45rem .8rem;border-radius:999px;font-weight:700;cursor:pointer}
+.btn-chip.active,.btn-chip:hover{background:var(--brand-blue);color:#fff}
+
+/* Cards métricas (arredondados, "estufados") */
+.metrics{display:grid;grid-template-columns:repeat(6,minmax(200px,1fr));gap:14px;margin-top:16px}
+@media (max-width:1280px){.metrics{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:720px){.metrics{grid-template-columns:1fr}}
+.metric{
+  background:linear-gradient(180deg,rgba(14,165,233,.10),rgba(14,165,233,.04));
+  border:1px solid rgba(14,165,233,.25); border-radius:16px; padding:16px;
+  box-shadow:0 12px 28px rgba(14,165,233,.12); cursor:pointer; transition:.2s
+}
+.metric:hover{transform:translateY(-2px);box-shadow:0 18px 36px rgba(14,165,233,.18)}
+.metric .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.metric .title{font-weight:700;opacity:.9}
+.metric .value{font-size:1.8rem;font-weight:800}
+.delta{display:inline-flex;gap:6px;font-weight:700}
+.delta.positive{color:#16a34a}.delta.negative{color:#dc2626}.delta.neutral{color:#64748b}
+
+/* Cards de gráfico/tabela */
+.card{
+  background:var(--menu-bg-light);border:1px solid var(--menu-border-light);
+  border-radius:16px;box-shadow:var(--card-shadow-light);padding:16px
+}
+.dark-theme .card{background:var(--menu-bg-dark);border:1px solid var(--menu-border-dark);box-shadow:var(--card-shadow-dark)}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card-title{margin:0;color:var(--brand-blue);font-weight:800}
+.chart{position:relative;min-height:360px}
+
+/* Área de gráficos lado a lado */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media (max-width:992px){.grid-2{grid-template-columns:1fr}}
+
+/* Tabelas com busca e ordenação */
+.table-tools{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.table-tools .search{flex:1;min-width:220px}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:.65rem .75rem;border-bottom:1px solid rgba(128,128,128,.15)}
+.table th{cursor:pointer;user-select:none;position:sticky;top:0;background:inherit;z-index:1}
+.badge{padding:.25rem .55rem;border-radius:8px;font-weight:700;font-size:.75rem}
+.bg-ok{background:#10b981;color:#fff}.bg-warn{background:#f59e0b;color:#111}.bg-bad{background:#ef4444;color:#fff}
+
+/* Botões */
+.btn{border:1px solid var(--brand-blue);color:var(--brand-blue);background:transparent;padding:.5rem .8rem;border-radius:10px;cursor:pointer}
+.btn:hover{background:var(--brand-blue);color:#fff}
+.btn-primary{background:var(--brand-blue);color:#fff;border:none}
+.btn-primary:hover{filter:brightness(1.06)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="diario-wrap">
+  <!-- Cabeçalho -->
+  <div class="diario-head">
+    <h1>Vendas do Dia</h1>
+    <div class="diario-actions">
+      <a href="{{ url_for('shopee.analytics_page') }}" class="btn">Analytics</a>
+      <a href="{{ url_for('shopee.curva_abc_page') }}" class="btn">Curva ABC</a>
+      <button id="btnRefresh" class="btn-primary">Atualizar</button>
+    </div>
+  </div>
+
+  <!-- Filtros (linha única) -->
+  <div class="filters">
+    <div class="filter">
+      <label>Data</label>
+      <input type="date" id="fData" class="form-control">
+    </div>
+    <div class="filter">
+      <label>Transportadora</label>
+      <select id="fTransp" class="form-select"><option value="">Todas</option></select>
+    </div>
+    <div class="filter">
+      <label>Tipo de Conta</label>
+      <select id="fConta" class="form-select"><option value="">Todas</option></select>
+    </div>
+    <!-- NOVO FILTRO DE STATUS DO PEDIDO -->
+    <div class="filter">
+      <label>Status do Pedido</label>
+      <select id="fStatus" class="form-select">
+        <option value="todas">Todos</option>
+        <option value="confirmadas">Confirmadas</option>
+        <option value="cancelados_nao_pagos">Cancelados/Não Pagos</option>
+      </select>
+    </div>
+    <div class="filter">
+      <label>&nbsp;</label>
+      <div class="quick">
+        <button class="btn-chip" data-q="hoje">Hoje</button>
+        <button class="btn-chip" data-q="ontem">Ontem</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards métricas (clicáveis -> modal) -->
+  <div class="metrics">
+    <div class="metric" data-modal="pedidos">
+      <div class="top"><span class="title">Pedidos</span><span id="dVendas" class="delta">—</span></div>
+      <div id="mVendas" class="value">0</div>
+    </div>
+    <div class="metric" data-modal="unidades">
+      <div class="top"><span class="title">Unidades</span><span id="dUnid" class="delta">—</span></div>
+      <div id="mUnid" class="value">0</div>
+    </div>
+    <div class="metric" data-modal="receita">
+      <div class="top"><span class="title">Receita</span><span id="dReceita" class="delta">—</span></div>
+      <div id="mReceita" class="value">R$ 0,00</div>
+    </div>
+    <div class="metric" data-modal="lucro">
+      <div class="top"><span class="title">Lucro</span><span id="dLucro" class="delta">—</span></div>
+      <div id="mLucro" class="value">R$ 0,00</div>
+    </div>
+    <div class="metric" data-modal="margem">
+      <div class="top"><span class="title">Margem Média</span><span id="dMC" class="delta">—</span></div>
+      <div id="mMC" class="value">0%</div>
+    </div>
+    <div class="metric" data-modal="ticket">
+      <div class="top"><span class="title">Ticket Médio</span><span id="dTicket" class="delta">—</span></div>
+      <div id="mTicket" class="value">R$ 0,00</div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-head">
+      <h3 class="card-title">Evolução (últimos 14 dias)</h3>
+      <div>
+        <button class="btn" id="btnSerieReceita">Receita</button>
+        <button class="btn" id="btnSerieLucro">Lucro</button>
+      </div>
+    </div>
+    <div class="chart"><canvas id="chartSerie"></canvas></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head">
+        <h3 class="card-title">Top Produtos (Lucro)</h3>
+        <button class="btn" id="btnTopModal">Detalhes</button>
+      </div>
+      <div class="chart"><canvas id="chartTop"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3 class="card-title">Transportadoras (Qtd)</h3>
+        <button class="btn" id="btnTranspModal">Detalhes</button>
+      </div>
+      <div class="chart"><canvas id="chartTransp"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Tabela do dia -->
+  <div class="card table-wrap">
+    <div class="table-tools">
+      <h3 class="card-title" style="margin:0">Vendas do Dia</h3>
+      <input id="tableSearch" class="form-control search" placeholder="Filtrar…">
+    </div>
+    <div class="table-responsive">
+      <table class="table" id="tblVendas">
+        <thead>
+          <tr>
+            <th data-k="produto">Produto</th>
+            <th data-k="SKU">SKU</th>
+            <th data-k="QTD_COMPRADA">Qtd</th>
+            <th data-k="VALOR_TOTAL">Receita</th>
+            <th data-k="LUCRO_REAL">Lucro</th>
+            <th data-k="mc">MC%</th>
+            <th data-k="TRANSPORTADORA">Transp.</th>
+            <th data-k="TIPO_CONTA">Conta</th>
+            <th>Saúde</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="9">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+/* ===== Endpoints existentes ===== */
+const API_DASH = "{{ url_for('shopee.api_dashboard_data') }}";
+const API_TOP  = "{{ url_for('shopee.api_top_produtos') }}";
+const API_TRSP = "{{ url_for('shopee.api_transportadoras') }}";
+const API_FILT = "{{ url_for('shopee.api_filtros') }}";
+const API_EVO  = "{{ url_for('shopee.api_evolucao_vendas') }}";
+
+/* ===== Helpers ===== */
+const BRL = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const PCT = v => `${Number(v||0).toFixed(2)}%`;
+const INT = v => Number(v||0).toLocaleString('pt-BR');
+function todayISO(){return new Date().toISOString().slice(0,10)}
+function shiftISO(iso,days){const d=new Date(iso);d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
+function setDelta(id,v){const e=document.getElementById(id);
+  if(v>0){e.className='delta positive';e.innerHTML=`<i class="fas fa-arrow-up"></i> ${PCT(v)}`}
+  else if(v<0){e.className='delta negative';e.innerHTML=`<i class="fas fa-arrow-down"></i> ${PCT(Math.abs(v))}`}
+  else{e.className='delta neutral';e.textContent='0%'}
+}
+function deltaPerc(now,prev){const a=Number(now||0),b=Number(prev||0);if(b===0&&a===0)return 0;if(b===0)return 100;return ((a-b)/Math.abs(b))*100}
+
+/* ===== Função para abrir modal (adicionada) ===== */
+function abrirModalPremium(titulo, conteudo, opcoes = {}) {
+    // Criar o modal se não existir
+    let modal = document.getElementById('modal-premium');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-premium';
+        modal.className = 'modal-premium';
+        modal.innerHTML = `
+            <div class="modal-premium-content">
+                <div class="modal-premium-header">
+                    <h3 id="modal-premium-titulo"></h3>
+                    <span class="modal-premium-close">&times;</span>
+                </div>
+                <div class="modal-premium-body" id="modal-premium-body"></div>
+                <div class="modal-premium-footer" id="modal-premium-footer"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Fechar modal ao clicar no X
+        modal.querySelector('.modal-premium-close').addEventListener('click', fecharModalPremium);
+
+        // Fechar modal ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) fecharModalPremium();
+        });
+    }
+
+    // Preencher conteúdo
+    document.getElementById('modal-premium-titulo').textContent = titulo;
+    document.getElementById('modal-premium-body').innerHTML = conteudo;
+
+    // Adicionar botões
+    const footer = document.getElementById('modal-premium-footer');
+    footer.innerHTML = '';
+    if (opcoes.buttons && opcoes.buttons.length) {
+        opcoes.buttons.forEach(btn => {
+            const button = document.createElement('button');
+            button.className = `btn ${btn.type === 'primary' ? 'btn-primary' : ''}`;
+            button.innerHTML = `${btn.icon ? `<i class="${btn.icon}"></i> ` : ''}${btn.text}`;
+            button.addEventListener('click', btn.action);
+            footer.appendChild(button);
+        });
+    } else {
+        // Botão padrão se nenhum for fornecido
+        const button = document.createElement('button');
+        button.className = 'btn btn-primary';
+        button.textContent = 'Fechar';
+        button.addEventListener('click', fecharModalPremium);
+        footer.appendChild(button);
+    }
+
+    // Exibir modal
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevenir scroll
+}
+
+function fecharModalPremium() {
+    const modal = document.getElementById('modal-premium');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Restaurar scroll
+    }
+}
+
+/* ===== Estado ===== */
+let serieMode='receita';
+let chartSerie=null, chartTop=null, chartTransp=null;
+const state={dia:todayISO(), transp:'', conta:'', status:'todas', metrics:{}, metricsOntem:{}, top:[], trsp:[], evolucao:[]}; // NOVO: status com valor padrão
+
+/* ===== Filtros ===== */
+async function loadFiltros(){
+  const r = await fetch(API_FILT); const j = await r.json();
+  const selT=document.getElementById('fTransp'), selC=document.getElementById('fConta');
+
+  // Preencher apenas transportadoras e tipos de conta da API
+  selT.innerHTML='<option value="">Todas</option>'+ (j.transportadoras||[]).map(t=>`<option>${t}</option>`).join('');
+  selC.innerHTML='<option value="">Todas</option>'+ (j.tipos_conta||[]).map(t=>`<option>${t}</option>`).join('');
+
+  // MANTER AS OPÇÕES FIXAS PARA STATUS - NÃO ALTERAR
+  // O filtro de status já está preenchido no HTML com as opções fixas
+}
+function paramsDia(iso){
+  const p=new URLSearchParams(); p.set('data_inicio',iso); p.set('data_fim',iso);
+  if(state.transp) p.set('transportadora',state.transp);
+  if(state.conta)  p.set('tipo_conta',state.conta);
+  if(state.status && state.status !== 'todas') p.set('status_pedido',state.status); // NOVO
+  return p.toString();
+}
+
+/* ===== Carregar tudo ===== */
+async function loadAll(){
+  const hoje = state.dia, ontem = shiftISO(hoje,-1);
+
+  // métricas hoje/ontem
+  const [mHoje, mOnt] = await Promise.all([
+    fetch(`${API_DASH}?${paramsDia(hoje)}`).then(r=>r.json()),
+    fetch(`${API_DASH}?${paramsDia(ontem)}`).then(r=>r.json()),
+  ]);
+  state.metrics = mHoje?.metrics||{};
+  state.metricsOntem = mOnt?.metrics||{};
+
+  // top e transportadora do dia
+  const [top, tr] = await Promise.all([
+    fetch(`${API_TOP}?limit=30&order_by=lucro&${paramsDia(hoje)}`).then(r=>r.json()),
+    fetch(`${API_TRSP}?${paramsDia(hoje)}`).then(r=>r.json())
+  ]);
+  state.top = top?.produtos||[];
+  state.trsp = tr?.transportadoras||[];
+
+  // evolução (30d) e filtramos últimos 14
+  const evo = await fetch(`${API_EVO}?periodo=30d&${paramsDia('')}`).then(r=>r.json()).catch(()=>({evolucao:[]}));
+  const arr = (evo?.evolucao||[]).slice(-14);
+  state.evolucao = arr;
+
+  renderCards(); renderSerie(); renderTop(); renderTransp(); renderTable();
+}
+
+/* ===== Render: cards ===== */
+function renderCards(){
+  const m=state.metrics, o=state.metricsOntem;
+  const vendas=Number(m.total_vendas||0), vendasO=Number(o.total_vendas||0);
+  document.getElementById('mVendas').textContent = INT(vendas);
+  setDelta('dVendas', deltaPerc(vendas, vendasO));
+
+  const unid=Number(m.total_itens_vendidos||0), unidO=Number(o.total_itens_vendidos||0);
+  document.getElementById('mUnid').textContent = INT(unid);
+  setDelta('dUnid', deltaPerc(unid, unidO));
+
+  const rec=Number(m.receita_total||0), recO=Number(o.receita_total||0);
+  document.getElementById('mReceita').textContent = BRL(rec);
+  setDelta('dReceita', deltaPerc(rec, recO));
+
+  const luc=Number(m.lucro_total||0), lucO=Number(o.lucro_total||0);
+  document.getElementById('mLucro').textContent = BRL(luc);
+  setDelta('dLucro', deltaPerc(luc, lucO));
+
+  const mc=Number(m.mc_media||0), mcO=Number(o.mc_media||0);
+  document.getElementById('mMC').textContent = PCT(mc);
+  setDelta('dMC', deltaPerc(mc, mcO));
+
+  const ticket=Number(m.ticket_medio||0), ticketO=Number(o.ticket_medio||0);
+  document.getElementById('mTicket').textContent = BRL(ticket);
+  setDelta('dTicket', deltaPerc(ticket, ticketO));
+}
+
+/* ===== Render: série (Receita/Lucro) ===== */
+function renderSerie(){
+  const labels = state.evolucao.map(d=>d.dia);
+  const serieR = state.evolucao.map(d=>Number(d.receita||0));
+  const serieL = state.evolucao.map(d=>Number(d.lucro||0));
+  const data = (serieMode==='receita') ? serieR : serieL;
+  const label = (serieMode==='receita') ? 'Receita' : 'Lucro';
+
+  const ctx = document.getElementById('chartSerie').getContext('2d');
+  if(chartSerie) chartSerie.destroy();
+  chartSerie = new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{label,data,fill:true,borderWidth:3,tension:.35}]},
+    options:{responsive:true,maintainAspectRatio:false}
+  });
+}
+
+/* ===== Render: top produtos ===== */
+function renderTop(){
+  const ctx = document.getElementById('chartTop').getContext('2d');
+  if(chartTop) chartTop.destroy();
+  const rows = state.top.slice(0,10);
+  chartTop = new Chart(ctx,{
+    type:'bar',
+    data:{labels:rows.map(p=>(p.produto||p.SKU||'—').toString().slice(0,20)),
+      datasets:[{label:'Lucro',data:rows.map(p=>Number(p.LUCRO_REAL||0))}]},
+    options:{responsive:true,maintainAspectRatio:false,onClick:openTopModal}
+  });
+}
+
+/* ===== Render: transportadoras ===== */
+function renderTransp(){
+  const ctx = document.getElementById('chartTransp').getContext('2d');
+  if(chartTransp) chartTransp.destroy();
+  const rows = state.trsp.slice(0,8);
+  chartTransp = new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:rows.map(t=>t.TRANSPORTADORA||'—'),datasets:[{data:rows.map(t=>Number(t.quantidade||0))}]},
+    options:{responsive:true,maintainAspectRatio:false,onClick:openTranspModal}
+  });
+}
+
+/* ===== Tabela ===== */
+function renderTable(){
+  const tb=document.querySelector('#tblVendas tbody'); tb.innerHTML='';
+  if(!state.top.length){tb.innerHTML='<tr><td colspan="9">Sem dados.</td></tr>';return;}
+  const frag=document.createDocumentFragment();
+  state.top.forEach(p=>{
+    const r=Number(p.VALOR_TOTAL||0), l=Number(p.LUCRO_REAL||0);
+    const mc=r>0?(Number(p.MARGEM_CONTRIBUICAO||0)/r*100):0;
+    const badge = mc>=20?'bg-ok':(mc>=5?'bg-warn':'bg-bad');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${(p.produto||p.SKU||'—').toString().slice(0,80)}</td>
+      <td>${p.SKU||'-'}</td>
+      <td>${INT(p.QTD_COMPRADA||0)}</td>
+      <td>${BRL(r)}</td>
+      <td>${BRL(l)}</td>
+      <td>${PCT(mc)}</td>
+      <td>${p.TRANSPORTADORA||'-'}</td>
+      <td>${p.TIPO_CONTA||'-'}</td>
+      <td><span class="badge ${badge}">${mc>=20?'Ótimo':(mc>=5?'OK':'Ruim')}</span></td>`;
+    frag.appendChild(tr);
+  });
+  tb.appendChild(frag);
+}
+
+/* ===== Modais (usa seu modal global do base.html) ===== */
+function openTopModal(){
+  const rows = state.top.map(p=>{
+    const r=Number(p.VALOR_TOTAL||0), l=Number(p.LUCRO_REAL||0);
+    const mc=r>0?(Number(p.MARGEM_CONTRIBUICAO||0)/r*100):0;
+    return `<tr><td>${(p.produto||p.SKU||'—').toString().slice(0,80)}</td><td>${p.SKU||'-'}</td>
+      <td>${INT(p.QTD_COMPRADA||0)}</td><td>${BRL(r)}</td><td>${BRL(l)}</td><td>${PCT(mc)}</td></tr>`;
+  }).join('');
+  const html = `<div class="table-responsive"><table class="table">
+    <thead><tr><th>Produto</th><th>SKU</th><th>Qtd</th><th>Receita</th><th>Lucro</th><th>MC%</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+  abrirModalPremium('Top Produtos – Detalhes do Dia', html, {
+    buttons:[{text:'Exportar CSV',icon:'ri-download-line',type:'export',action:exportTopCSV},
+             {text:'Fechar',icon:'ri-close-line',type:'details',action:fecharModalPremium}]
+  });
+}
+function exportTopCSV(){
+  const head=['Produto','SKU','Qtd','Receita','Lucro','MC%'];
+  const lines=state.top.map(p=>{
+    const r=Number(p.VALOR_TOTAL||0), l=Number(p.LUCRO_REAL||0), mc=r>0?(Number(p.MARGEM_CONTRIBUICAO||0)/r*100):0;
+    return [`"${(p.produto||p.SKU||'').replace(/"/g,'""')}"`, `"${(p.SKU||'').replace(/"/g,'""')}"`, INT(p.QTD_COMPRADA||0), BRL(r), BRL(l), PCT(mc)];
+  });
+  const csvContent = "data:text/csv;charset=utf-8," + [head.join(','), ...lines.map(e => e.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', 'top_produtos_dia.csv');
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+}
+
+function openTranspModal(){
+  const rows = state.trsp.map(t=>{
+    const r=Number(t.receita_total||0), l=Number(t.lucro_total||0);
+    const mc=r>0?(Number(t.mc_media||0)):0;
+    return `<tr><td>${t.TRANSPORTADORA||'-'}</td><td>${INT(t.quantidade||0)}</td>
+      <td>${BRL(r)}</td><td>${BRL(l)}</td><td>${PCT(mc)}</td></tr>`;
+  }).join('');
+  const html = `<div class="table-responsive"><table class="table">
+    <thead><tr><th>Transportadora</th><th>Qtd</th><th>Receita</th><th>Lucro</th><th>MC%</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+  abrirModalPremium('Transportadoras – Detalhes do Dia', html, {
+    buttons:[{text:'Exportar CSV',icon:'ri-download-line',type:'export',action:exportTranspCSV},
+             {text:'Fechar',icon:'ri-close-line',type:'details',action:fecharModalPremium}]
+  });
+}
+function exportTranspCSV(){
+  const head=['Transportadora','Qtd','Receita','Lucro','MC%'];
+  const lines=state.trsp.map(t=>{
+    const r=Number(t.receita_total||0), l=Number(t.lucro_total||0), mc=r>0?(Number(t.mc_media||0)):0;
+    return [`"${(t.TRANSPORTADORA||'').replace(/"/g,'""')}"`, INT(t.quantidade||0), BRL(r), BRL(l), PCT(mc)];
+  });
+  const csvContent = "data:text/csv;charset=utf-8," + [head.join(','), ...lines.map(e => e.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', 'transportadoras_dia.csv');
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+}
+
+/* ===== Eventos ===== */
+document.addEventListener('DOMContentLoaded', async ()=>{
+  // data de hoje
+  document.getElementById('fData').value = state.dia;
+
+  // carrega filtros e dados iniciais
+  await loadFiltros();
+  await loadAll();
+
+  // listeners
+  document.getElementById('fData').addEventListener('change',e=>{state.dia=e.target.value; loadAll();});
+  document.getElementById('fTransp').addEventListener('change',e=>{state.transp=e.target.value; loadAll();});
+  document.getElementById('fConta').addEventListener('change',e=>{state.conta=e.target.value; loadAll();});
+  document.getElementById('fStatus').addEventListener('change',e=>{state.status=e.target.value; loadAll();}); // NOVO
+
+  document.getElementById('btnRefresh').addEventListener('click', loadAll);
+  document.getElementById('btnSerieReceita').addEventListener('click', ()=>{serieMode='receita'; renderSerie();});
+  document.getElementById('btnSerieLucro').addEventListener('click', ()=>{serieMode='lucro'; renderSerie();});
+
+  // quick filters
+  document.querySelectorAll('.btn-chip').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      const q=e.target.dataset.q;
+      if(q==='hoje') state.dia=todayISO();
+      else if(q==='ontem') state.dia=shiftISO(todayISO(),-1);
+      document.getElementById('fData').value=state.dia;
+      loadAll();
+    });
+  });
+
+  // search table
+  document.getElementById('tableSearch').addEventListener('keyup',e=>{
+    const term=e.target.value.toLowerCase();
+    document.querySelectorAll('#tblVendas tbody tr').forEach(row=>{
+      row.style.display = row.textContent.toLowerCase().includes(term)?'':'none';
+    });
+  });
+
+  // sort table
+  document.querySelectorAll('#tblVendas th[data-k]').forEach(th=>{
+    th.addEventListener('click',e=>{
+      const key=e.target.dataset.k;
+      const type=e.target.dataset.type;
+      const tbody=document.querySelector('#tblVendas tbody');
+      const rows=Array.from(tbody.querySelectorAll('tr'));
+
+      rows.sort((a,b)=>{
+        let valA=a.querySelector(`td:nth-child(${Array.from(th.parentNode.children).indexOf(th)+1})`).textContent;
+        let valB=b.querySelector(`td:nth-child(${Array.from(th.parentNode.children).indexOf(th)+1})`).textContent;
+
+        if(type==='number' || type==='currency'){
+          valA=parseFloat(valA.replace(/[^0-9,-]+/g,'').replace(',','.'));
+          valB=parseFloat(valB.replace(/[^0-9,-]+/g,'').replace(',','.'));
+        }
+
+        if(valA < valB) return -1;
+        if(valA > valB) return 1;
+        return 0;
+      });
+
+      if(th.classList.contains('asc')){
+        rows.reverse();
+        th.classList.remove('asc');
+        th.classList.add('desc');
+      }else{
+        th.classList.remove('desc');
+        th.classList.add('asc');
+      }
+
+      rows.forEach(row=>tbody.appendChild(row));
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,773 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Estoque{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/dashboard_estoque.css') }}">
+<style>
+    /* --- Layout Geral e Controles --- */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .dashboard-filters {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .filter-btn {
+        padding: 8px 12px;
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--menu-border-light);
+        background-color: var(--menu-bg-light);
+        color: var(--text-light);
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+    }
+    .dark-theme .filter-btn {
+        border-color: var(--menu-border-dark);
+        background-color: var(--menu-bg-dark);
+        color: var(--text-dark);
+    }
+    #edit-mode-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        padding: 8px 15px;
+        cursor: pointer;
+        border-radius: var(--border-radius-sm);
+        background-color: var(--menu-bg-light);
+        border: 1px solid var(--primary-bright);
+        color: var(--primary-bright);
+        transition: all 0.3s ease;
+    }
+    .dark-theme #edit-mode-toggle {
+        background-color: var(--menu-bg-dark);
+        border-color: var(--primary-dark);
+        color: var(--primary-dark);
+    }
+    #edit-mode-toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* --- Layout Moderno dos Cards de Resumo (em linha) --- */
+    .summary-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        padding: 10px;
+        box-sizing: border-box;
+        width: 100%;
+    }
+    .summary-card {
+        background-color: var(--menu-bg-light);
+        border: 1px solid var(--menu-border-light);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        box-shadow: var(--card-shadow-light);
+        position: relative;
+        overflow: hidden;
+    }
+    .dark-theme .summary-card {
+        background-color: var(--menu-bg-dark);
+        border-color: var(--menu-border-dark);
+        box-shadow: var(--card-shadow-dark);
+    }
+    .summary-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+    .summary-card .card-title {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .dark-theme .summary-card .card-title {
+        color: #adb5bd;
+    }
+    .summary-card .card-icon {
+        font-size: 2rem;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: center;
+    }
+    .summary-card .card-icon .ri-money-dollar-circle-line { color: #28a745; }
+    .summary-card .card-icon .ri-stack-line { color: #17a2b8; }
+    .summary-card .card-icon .ri-refresh-line { color: #ffc107; }
+    .summary-card .card-icon .ri-box-3-line { color: #fd7e14; }
+    .summary-card .card-icon .ri-prohibited-line { color: #dc3545; }
+    .summary-card .card-icon .ri-exchange-line { color: #6f42c1; }
+    .summary-card .card-icon .ri-archive-drawer-line { color: #20c997; }
+    .summary-card .card-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-light);
+        font-family: 'Space Grotesk', sans-serif;
+        margin: 5px 0;
+    }
+    .dark-theme .summary-card .card-value {
+        color: var(--text-dark);
+    }
+    .summary-card .card-description {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    .dark-theme .summary-card .card-description {
+        color: #adb5bd;
+    }
+
+    /* --- Estilos do GridStack --- */
+    .grid-stack {
+        margin-top: 20px;
+    }
+    .grid-stack-item-content {
+        background-color: var(--menu-bg-light);
+        border: 1px solid var(--menu-border-light);
+        box-shadow: var(--card-shadow-light);
+        border-radius: var(--border-radius);
+        overflow: hidden !important;
+        padding: 20px;
+    }
+    .dark-theme .grid-stack-item-content {
+        background-color: var(--menu-bg-dark);
+        border-color: var(--menu-border-dark);
+        box-shadow: var(--card-shadow-dark);
+    }
+    .grid-stack-placeholder > .placeholder-content {
+        background-color: rgba(0, 208, 255, 0.2) !important;
+        border: 2px dashed var(--primary-bright) !important;
+    }
+    .widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text-light);
+        margin: 0;
+    }
+    .dark-theme .chart-title {
+        color: var(--text-dark);
+    }
+
+    /* --- Tooltip Styles --- */
+    .tooltip-container {
+        position: relative;
+        display: inline-flex;
+    }
+    .tooltip-icon {
+        cursor: pointer;
+        color: var(--primary-bright);
+        font-size: 1.1rem;
+        margin-left: 8px;
+    }
+    .dark-theme .tooltip-icon {
+        color: var(--primary-dark);
+    }
+    .tooltip-content {
+        position: fixed;
+        visibility: hidden;
+        width: 280px;
+        text-align: left;
+        border-radius: var(--border-radius-sm);
+        padding: 15px;
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        bottom: auto;
+        right: auto;
+        background-color: var(--menu-bg-light);
+        color: var(--text-light);
+        box-shadow: var(--card-shadow-light);
+        border: 1px solid var(--menu-border-light);
+    }
+    .dark-theme .tooltip-content {
+        background-color: var(--menu-bg-dark);
+        color: var(--text-dark);
+        box-shadow: var(--card-shadow-dark);
+        border: 1px solid var(--menu-border-dark);
+    }
+    .tooltip-container:hover .tooltip-content {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* --- Novos Estilos para Elementos Adicionais --- */
+    .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    .dashboard-table th,
+    .dashboard-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid var(--menu-border-light);
+    }
+    .dark-theme .dashboard-table th,
+    .dark-theme .dashboard-table td {
+        border-bottom: 1px solid var(--menu-border-dark);
+    }
+    .dashboard-table th {
+        font-weight: 600;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .dark-theme .dashboard-table th {
+        color: var(--text-dark);
+    }
+    .dashboard-table tr:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+    .dark-theme .dashboard-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    .btn-link {
+        color: var(--primary-bright);
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.3s ease;
+    }
+    .dark-theme .btn-link {
+        color: var(--primary-dark);
+    }
+    .btn-link:hover {
+        text-decoration: underline;
+        gap: 8px;
+    }
+    .kpi-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 15px 0;
+    }
+    .kpi-item {
+        text-align: center;
+        padding: 15px;
+        border-radius: var(--border-radius-sm);
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+    .dark-theme .kpi-item {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    .kpi-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-bright);
+        font-family: 'Space Grotesk', sans-serif;
+        margin-bottom: 5px;
+    }
+    .dark-theme .kpi-value {
+        color: var(--primary-dark);
+    }
+    .kpi-label {
+        font-size: 0.8rem;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .dark-theme .kpi-label {
+        color: var(--text-dark);
+    }
+    .inventario-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 15px;
+    }
+    .inventario-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-radius: var(--border-radius-sm);
+        background-color: rgba(0, 0, 0, 0.03);
+        transition: all 0.3s ease;
+    }
+    .dark-theme .inventario-item {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    .inventario-item:hover {
+        transform: translateX(5px);
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    .dark-theme .inventario-item:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+    .inventario-info {
+        flex-grow: 1;
+    }
+    .inventario-name {
+        font-weight: 600;
+        margin-bottom: 3px;
+    }
+    .inventario-date {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .dark-theme .inventario-date {
+        color: #adb5bd;
+    }
+    .inventario-status {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    .status-andamento {
+        background-color: #e8f4fd;
+        color: #0a58ca;
+    }
+    .status-concluido {
+        background-color: #e8f6ef;
+        color: #0f5132;
+    }
+    .chart-container {
+        position: relative;
+        height: 100%;
+    }
+    .alert-widget-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .alertas-lista {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    .alerta-item {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: var(--border-radius-sm);
+        background-color: #f8d7da;
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+    .dark-theme .alerta-item {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #f8d7da;
+    }
+    .alerta-icon {
+        margin-right: 10px;
+        font-size: 1.2rem;
+    }
+
+    /* --- Responsividade --- */
+    @media (max-width: 1200px) {
+        .summary-cards-container {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+    }
+    @media (max-width: 992px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .header-controls {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .kpi-container {
+            grid-template-columns: 1fr;
+        }
+    }
+    @media (max-width: 768px) {
+        .summary-cards-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .dashboard-filters {
+            flex-wrap: wrap;
+        }
+    }
+    @media (max-width: 576px) {
+        .summary-cards-container {
+            grid-template-columns: 1fr;
+        }
+        .header-controls {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Dashboard de Estoque</h1>
+        <div class="header-controls">
+            <div class="dashboard-filters">
+                <label for="periodo-filtro">Analisar Período:</label>
+                <select id="periodo-filtro" class="filter-btn">
+                    <option value="7">Últimos 7 dias</option>
+                    <option value="30">Últimos 30 dias</option>
+                    <option value="60">Últimos 60 dias</option>
+                    <option value="90" selected>Últimos 90 dias</option>
+                    <option value="180">Últimos 6 meses</option>
+                    <option value="365">Último Ano</option>
+                </select>
+                <select id="categoria-filtro" class="filter-btn">
+                    <option value="">Todas Categorias</option>
+                    <option value="eletronicos">Eletrônicos</option>
+                    <option value="moveis">Móveis</option>
+                    <option value="vestuario">Vestuário</option>
+                    <option value="alimentos">Alimentos</option>
+                    <option value="outros">Outros</option>
+                </select>
+            </div>
+            <button id="edit-mode-toggle">
+                <i class="ri-edit-box-line"></i>
+                <span>Modo Edição</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid-stack">
+        <!-- Linha Única de Cards de Resumo -->
+        <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="12" gs-h="3">
+            <div class="grid-stack-item-content">
+                <div class="summary-cards-container">
+                    <div class="summary-card">
+                        <div class="card-title">Custo Total</div>
+                        <div class="card-icon"><i class="ri-money-dollar-circle-line"></i></div>
+                        <div class="card-value" id="custo-total">R$ 152.847,32</div>
+                        <div class="card-description">Valor total em estoque</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div class="card-title">Itens em Estoque</div>
+                        <div class="card-icon"><i class="ri-stack-line"></i></div>
+                        <div class="card-value" id="qtd-total">8.742</div>
+                        <div class="card-description">Quantidade total</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div class="card-title">Giro de Estoque</div>
+                        <div class="card-icon"><i class="ri-refresh-line"></i></div>
+                        <div class="card-value" id="giro-estoque">2.8</div>
+                        <div class="card-description">Vendas por período</div>
+                    </div>
+
+                    <a href="{{ url_for('estoque.listar_produtos_sem_giro') }}" class="summary-card">
+                        <div class="card-title">Produtos sem Giro</div>
+                        <div class="card-icon"><i class="ri-box-3-line"></i></div>
+                        <div class="card-value" id="produtos-sem-giro">47</div>
+                        <div class="card-description">Itens parados</div>
+                    </a>
+
+                    <div class="summary-card">
+                        <div class="card-title">Valor Parado</div>
+                        <div class="card-icon"><i class="ri-prohibited-line"></i></div>
+                        <div class="card-value" id="valor-parado">R$ 28.451,67</div>
+                        <div class="card-description">Capital imobilizado</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div class="card-title">Total de Produtos</div>
+                        <div class="card-icon"><i class="ri-archive-drawer-line"></i></div>
+                        <div class="card-value" id="total-produtos">324</div>
+                        <div class="card-description">Itens cadastrados</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Gráfico: Top 10 Produtos por Custo -->
+        <div class="grid-stack-item" gs-x="0" gs-y="3" gs-w="7" gs-h="5">
+            <div class="grid-stack-item-content chart-container">
+                <div class="widget-header">
+                    <h2 class="chart-title">Top 10 Produtos por Custo</h2>
+                    <div class="tooltip-container">
+                        <i class="ri-information-line tooltip-icon"></i>
+                        <div class="tooltip-content">
+                            Os produtos que representam maior valor em seu estoque. Esses itens devem receber atenção especial no controle.
+                        </div>
+                    </div>
+                </div>
+                <canvas id="custoPorProdutoChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Widget: Produtos que Precisam de Atenção -->
+        <div class="grid-stack-item" gs-x="7" gs-y="3" gs-w="5" gs-h="5">
+            <div class="grid-stack-item-content alert-widget-container">
+                <div class="widget-header">
+                    <h2 class="chart-title">Produtos que Precisam de Atenção</h2>
+                    <div class="tooltip-container">
+                        <i class="ri-information-line tooltip-icon"></i>
+                        <div class="tooltip-content">
+                            Itens com estoque baixo, sem movimento ou próximos do ponto de reposição.
+                        </div>
+                    </div>
+                </div>
+                <div id="alertas-lista" class="alertas-lista">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico: Evolução de Estoque -->
+        <div class="grid-stack-item" gs-x="0" gs-y="8" gs-w="6" gs-h="5">
+            <div class="grid-stack-item-content chart-container">
+                <div class="widget-header">
+                    <h2 class="chart-title">Evolução do Estoque (Últimos 30 dias)</h2>
+                    <div class="tooltip-container">
+                        <i class="ri-information-line tooltip-icon"></i>
+                        <div class="tooltip-content">
+                            Variação do valor total de estoque ao longo do tempo. Ajuda a identificar tendências e sazonalidades.
+                        </div>
+                    </div>
+                </div>
+                <canvas id="evolucaoEstoqueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico: Movimentações por Tipo -->
+        <div class="grid-stack-item" gs-x="6" gs-y="8" gs-w="6" gs-h="5">
+            <div class="grid-stack-item-content chart-container">
+                <div class="widget-header">
+                    <h2 class="chart-title">Distribuição de Movimentações</h2>
+                    <div class="tooltip-container">
+                        <i class="ri-information-line tooltip-icon"></i>
+                        <div class="tooltip-content">
+                            Proporção entre entradas e saídas de estoque. Um equilíbrio saudável é essencial para a operação.
+                        </div>
+                    </div>
+                </div>
+                <canvas id="movimentacoesTipoChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabela: Produtos com Baixo Estoque -->
+        <div class="grid-stack-item" gs-x="0" gs-y="13" gs-w="12" gs-h="6">
+            <div class="grid-stack-item-content">
+                <div class="widget-header">
+                    <h2 class="chart-title">Produtos com Estoque Baixo</h2>
+                    <a href="{{ url_for('estoque.listar_produtos') }}" class="btn-link">
+                        Ver Todos <i class="ri-arrow-right-line"></i>
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>SKU</th>
+                                <th>Estoque Atual</th>
+                                <th>Ponto de Reposição</th>
+                                <th>Status</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-estoque-baixo">
+                            <!-- Será preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget: Últimos Inventários -->
+        <div class="grid-stack-item" gs-x="0" gs-y="19" gs-w="6" gs-h="5">
+            <div class="grid-stack-item-content">
+                <div class="widget-header">
+                    <h2 class="chart-title">Últimos Inventários</h2>
+                    <a href="{{ url_for('estoque.inventarios') }}" class="btn-link">
+                        Ver Todos <i class="ri-arrow-right-line"></i>
+                    </a>
+                </div>
+                <div class="inventario-list" id="lista-inventarios">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget: Indicadores de Performance -->
+        <div class="grid-stack-item" gs-x="6" gs-y="19" gs-w="6" gs-h="5">
+            <div class="grid-stack-item-content">
+                <div class="widget-header">
+                    <h2 class="chart-title">Indicadores de Performance</h2>
+                    <div class="tooltip-container">
+                        <i class="ri-information-line tooltip-icon"></i>
+                        <div class="tooltip-content">
+                            Métricas-chave para avaliar a eficiência da gestão de estoque.
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-container">
+                    <div class="kpi-item">
+                        <div class="kpi-value" id="taxa-rotatividade">...</div>
+                        <div class="kpi-label">Taxa de Rotatividade</div>
+                    </div>
+                    <div class="kpi-item">
+                        <div class="kpi-value" id="nivel-servico">...</div>
+                        <div class="kpi-label">Nível de Serviço</div>
+                    </div>
+                    <div class="kpi-item">
+                        <div class="kpi-value" id="cobertura-estoque">...</div>
+                        <div class="kpi-label">Cobertura (dias)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/estoque/dashboard_estoque.js', v='3.0') }}"></script>
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+  // === GridStack: manter identidade visual + modo edição ===
+  const grid = GridStack.init({
+    disableDrag: true,
+    disableResize: true,
+    animate: true,
+    cellHeight: 70,
+    verticalMargin: 15
+  });
+
+  const editButton = document.getElementById('edit-mode-toggle');
+  if (editButton) {
+    editButton.addEventListener('click', function() {
+      const isEditing = grid.opts.disableDrag;
+      grid.enableMove(isEditing);
+      grid.enableResize(isEditing);
+      grid.opts.disableDrag = !isEditing;
+      grid.opts.disableResize = !isEditing;
+      this.classList.toggle('active', isEditing);
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.textContent = isEditing
+        ? 'Modo edição ativado. Arraste os widgets para reposicionar.'
+        : 'Modo edição desativado.';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    });
+  }
+
+  // === Tooltips minimalistas ===
+  document.querySelectorAll('.tooltip-container').forEach(container => {
+    const tooltip = container.querySelector('.tooltip-content');
+    container.addEventListener('mouseenter', () => { tooltip.style.visibility = 'visible'; tooltip.style.opacity = '1'; });
+    container.addEventListener('mouseleave', () => { tooltip.style.visibility = 'hidden'; tooltip.style.opacity = '0'; });
+  });
+
+  // === Dados reais: delega para o JS externo ===
+  // O arquivo /static/js/estoque/dashboard_estoque.js expõe atualizarDashboard()
+  const periodoEl = document.getElementById('periodo-filtro');
+  function atualizarTudo() {
+    if (window.atualizarDashboard) window.atualizarDashboard();
+    preencherTabelaBaixo();
+  }
+  if (periodoEl) periodoEl.addEventListener('change', atualizarTudo);
+
+  // === Tabela 'Estoque Baixo' a partir do mesmo endpoint de alertas ===
+  async function preencherTabelaBaixo() {
+    const tbody = document.getElementById('tabela-estoque-baixo');
+    if (!tbody) return;
+    const periodo = (periodoEl && periodoEl.value) ? periodoEl.value : 90;
+    tbody.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
+    try {
+      const res = await fetch(`/estoque/api/produtos_alerta?periodo=${periodo}`);
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">Nenhum item crítico no momento.</td></tr>';
+        return;
+      }
+      const rows = data.map(p => {
+        const status = (p.status || '').toString();
+        const cls = status.toLowerCase().includes('crítico') || status.toLowerCase().includes('critico')
+          ? 'critico'
+          : (status.toLowerCase().includes('erro') ? 'erro' : 'alerta');
+        return `
+          <tr>
+            <td>${p.nome ?? ''}</td>
+            <td>${p.sku ?? ''}</td>
+            <td>${p.quantidade ?? p.estoque ?? 0}</td>
+            <td>${p.ponto_reposicao ?? p.pontoReposicao ?? '-'}</td>
+            <td><span class="status-badge ${cls}">${status || 'ALERTA'}</span></td>
+            <td><a class="btn-link" href="/estoque/produto/${p.id}">Detalhes</a></td>
+          </tr>`;
+      }).join('');
+      tbody.innerHTML = rows;
+    } catch (e) {
+      console.error('Erro ao carregar tabela de estoque baixo:', e);
+      tbody.innerHTML = '<tr><td colspan="6">Erro ao carregar.</td></tr>';
+    }
+  }
+
+  // === Kickoff inicial ===
+  atualizarTudo();
+});
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch('/estoque/api/total_produtos');
+    const json = await res.json();
+    const total = (json && typeof json.total_produtos === 'number') ? json.total_produtos : 0;
+
+    // 1) Primeiro, tenta pelo ID padrão (se existir no seu HTML)
+    let alvo = document.getElementById('total-produtos');
+
+    // 2) Se não existir, acha o card pela legenda (ex.: "Produtos", "Produtos (SKUs)")
+    if (!alvo) {
+      const cards = Array.from(document.querySelectorAll('.summary-card'));
+      for (const card of cards) {
+        const titulo = (card.querySelector('.card-title')?.textContent || '').toLowerCase();
+        if (titulo.includes('produto')) { // cobre "Produtos", "Produtos (SKUs)", etc.
+          alvo = card.querySelector('.card-value') || card;
+          break;
+        }
+      }
+    }
+
+    if (alvo) alvo.textContent = total;
+    else console.warn('Não encontrei o elemento do card de Produtos para preencher.');
+  } catch (e) {
+    console.error('Erro ao preencher total de produtos:', e);
+  }
+});
+</script>
+{% endblock %}

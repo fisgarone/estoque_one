@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Movimentações{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/dashboard_estoque.css') }}">
+<style>
+    /* Estilos do Header e Filtros */
+    .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; flex-wrap: wrap; }
+    .search-and-filters { display: flex; gap: 15px; flex-grow: 1; }
+    .search-bar { position: relative; flex-grow: 1; }
+    .search-bar input, .filter-btn {
+        padding: 12px 20px;
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--menu-border-light);
+        background-color: var(--menu-bg-light);
+        color: var(--text-light);
+        font-size: 1rem;
+    }
+    .dark-theme .search-bar input, .dark-theme .filter-btn { border-color: var(--menu-border-dark); background-color: var(--menu-bg-dark); color: var(--text-dark); }
+    .search-bar input { width: 100%; padding-left: 45px; }
+    .search-bar i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--primary-bright); font-size: 1.2rem; }
+    .filter-btn { cursor: pointer; }
+
+    /* Estilos dos Cards de Movimentação */
+    .movement-list { display: flex; flex-direction: column; gap: 15px; }
+    .movement-card {
+        background: var(--menu-bg-light);
+        border-radius: var(--border-radius);
+        border-left: 5px solid;
+        box-shadow: var(--card-shadow-light);
+        display: flex;
+        align-items: center;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+    .dark-theme .movement-card { background: var(--menu-bg-dark); box-shadow: var(--card-shadow-dark); }
+    .movement-card:hover { transform: translateX(5px); }
+    .movement-card.entrada { border-color: var(--success-color); }
+    .movement-card.saida { border-color: var(--error-color); }
+    .movement-icon { font-size: 2.5rem; margin-right: 20px; }
+    .movement-card.entrada .movement-icon { color: var(--success-color); }
+    .movement-card.saida .movement-icon { color: var(--error-color); }
+    .movement-details { flex-grow: 1; }
+    .movement-details h4 { margin: 0 0 5px 0; font-size: 1.1rem; }
+    .movement-details .product-name { font-weight: 600; }
+    .movement-details .motivo { font-size: 0.9rem; opacity: 0.8; }
+    .movement-info { text-align: right; }
+    .movement-info .quantidade { font-size: 1.8rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; margin-bottom: 5px; }
+    .movement-card.entrada .quantidade::before { content: '+'; }
+    .movement-card.saida .quantidade::before { content: '-'; }
+    .movement-info .data { font-size: 0.8rem; opacity: 0.7; }
+
+    /* Estilo do Botão Flutuante */
+    .fab { position: fixed; bottom: 40px; right: 40px; width: 60px; height: 60px; background: linear-gradient(45deg, var(--primary-bright), var(--accent-light)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.8rem; text-decoration: none; box-shadow: 0 10px 25px rgba(0, 208, 255, 0.4); transition: all 0.3s ease; z-index: 1050; }
+    .fab:hover { transform: scale(1.1) rotate(15deg); box-shadow: 0 15px 30px rgba(255, 62, 128, 0.5); }
+
+    /* Estilo da Paginação */
+    .pagination { display: flex; justify-content: center; align-items: center; margin-top: 40px; gap: 8px; }
+    .pagination a, .pagination span { color: var(--text-light-contrast); padding: 10px 15px; text-decoration: none; border-radius: var(--border-radius-sm); transition: all 0.3s ease; border: 1px solid transparent; }
+    .dark-theme .pagination a, .dark-theme .pagination span { color: var(--text-dark); }
+    .pagination a:hover { border-color: var(--primary-bright); color: var(--primary-bright); }
+    .dark-theme .pagination a:hover { border-color: var(--primary-dark); color: var(--primary-dark); }
+    .pagination .active { background: var(--primary-bright); color: white; font-weight: bold; }
+    .dark-theme .pagination .active { background: var(--primary-dark); }
+    .pagination .disabled { opacity: 0.5; pointer-events: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+{# -------- Macros locais: truncar em 4 casas e data BR (sem hora) -------- #}
+{% macro fmt4(v) -%}
+    {%- set v2 = ((v|float * 10000)|int / 10000.0) -%}
+    {{ "%.4f"|format(v2) }}
+{%- endmacro %}
+
+{% macro data_br(dbr, diso) -%}
+    {%- if dbr %}
+        {{ dbr.split(' ')[0] }}
+    {%- elif diso %}
+        {%- set d = diso.split(' ')[0] -%}
+        {%- set p = d.split('-') -%}
+        {{ p[2] ~ '/' ~ p[1] ~ '/' ~ p[0] }}
+    {%- else -%}
+        {{ '' }}
+    {%- endif -%}
+{%- endmacro %}
+
+<div class="dashboard-container">
+    <div class="header-actions">
+        <h1 class="dashboard-title" style="margin-bottom: 0;">Histórico de Movimentações</h1>
+        <div class="search-and-filters">
+            <div class="search-bar">
+                <i class="ri-search-line"></i>
+                <input type="text" id="searchInput" placeholder="Buscar por produto ou motivo...">
+            </div>
+            <select id="filterType" class="filter-btn">
+                <option value="todos">Todos os Tipos</option>
+                <option value="entrada">Apenas Entradas</option>
+                <option value="saida">Apenas Saídas</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Mensagens Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="notification show {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="movement-list" id="movementList">
+        <!-- Loop com paginação -->
+        {% for mov in movimentacoes.items %}
+        {# normaliza tipo para classe/css e ícone #}
+        {% set tipo_lower = (mov.tipo or '')|lower %}
+        <div class="movement-card {{ tipo_lower }}"
+             data-produto="{{ mov.estoque.nome|lower if mov.estoque else '' }}"
+             data-motivo="{{ (mov.observacao or mov.origem or '')|lower }}"
+             data-tipo="{{ tipo_lower }}">
+
+            <div class="movement-icon">
+                <i class="ri-{{ 'arrow-down-circle-line' if tipo_lower == 'entrada' else 'arrow-up-circle-line' }}"></i>
+            </div>
+
+            <div class="movement-details">
+                <h4>
+                    <span class="product-name">{{ mov.estoque.nome if mov.estoque else '—' }}</span>
+                </h4>
+                <p class="motivo">{{ mov.observacao or mov.origem or 'Sem motivo especificado' }}</p>
+            </div>
+
+            <div class="movement-info">
+                <div class="quantidade">{{ fmt4(mov.quantidade) }}</div>
+                <div class="data">{{ data_br(mov.data_mov_br, mov.data_mov_iso) }}</div>
+            </div>
+        </div>
+        {% else %}
+        <p>Nenhuma movimentação registrada.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Paginação -->
+    <nav class="pagination">
+        <a href="{{ url_for('estoque.listar_movimentacoes', page=movimentacoes.prev_num) if movimentacoes.has_prev else '#' }}"
+           class="page-link {{ 'disabled' if not movimentacoes.has_prev }}">
+            &laquo; Anterior
+        </a>
+        {% for page_num in movimentacoes.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                <a href="{{ url_for('estoque.listar_movimentacoes', page=page_num) }}"
+                   class="page-link {{ 'active' if page_num == movimentacoes.page else '' }}">
+                    {{ page_num }}
+                </a>
+            {% else %}
+                <span class="page-link disabled">...</span>
+            {% endif %}
+        {% endfor %}
+        <a href="{{ url_for('estoque.listar_movimentacoes', page=movimentacoes.next_num) if movimentacoes.has_next else '#' }}"
+           class="page-link {{ 'disabled' if not movimentacoes.has_next }}">
+            Próxima &raquo;
+        </a>
+    </nav>
+
+    <!-- Botão Flutuante para Registrar Movimentação -->
+    <a href="{{ url_for('estoque.nova_movimentacao') }}" class="fab" title="Registrar Nova Movimentação">
+        <i class="ri-add-line"></i>
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const filterType = document.getElementById('filterType');
+    const movementList = document.getElementById('movementList');
+    const cards = movementList.getElementsByClassName('movement-card');
+
+    function applyFilters() {
+        const searchTerm = (searchInput.value || '').toLowerCase();
+        const typeFilter = filterType.value;
+
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            const produto = (card.getAttribute('data-produto') || '');
+            const motivo  = (card.getAttribute('data-motivo')  || '');
+            const tipo    = (card.getAttribute('data-tipo')    || '');
+
+            const matchesSearch = produto.includes(searchTerm) || motivo.includes(searchTerm);
+            const matchesType   = (typeFilter === 'todos') || (tipo === typeFilter);
+
+            card.style.display = (matchesSearch && matchesType) ? "flex" : "none";
+        }
+    }
+
+    searchInput.addEventListener('keyup', applyFilters);
+    filterType.addEventListener('change', applyFilters);
+});
+</script>
+{% endblock %}

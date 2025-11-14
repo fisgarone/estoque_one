@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Processar Entradas de NF-e{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/inventario.css', v='16.0') }}">
+<style>
+.badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; }
+.badge-ok { background:#e6ffed; color:#0a7c2f; border:1px solid #b6f2c6; }
+.badge-off { background:#fff5f5; color:#a11; border:1px solid #f3c2c2; }
+.table-professional td, .table-professional th { vertical-align: middle; }
+.sticky-actions { position: sticky; top: 64px; background: #fff; z-index: 5; padding: 8px 0; border-bottom: 1px solid #eee; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container inventario-page">
+  <div class="main-content-container">
+    <div class="page-header">
+      <h1 class="page-title">Fila de Processamento de Entradas</h1>
+    </div>
+    <p class="text-muted">Selecione os itens com <strong>Regra disponível</strong> para processar em massa.<br>
+      A regra aplica o fator de conversão aprendido previamente (Produto &rarr; Unidade de compra) e lança direto no estoque com IPI.</p>
+
+    {% if itens and itens|length > 0 %}
+      <form method="post" action="{{ url_for('estoque.aplicar_regras_entrada_em_massa') }}">
+        <div class="sticky-actions">
+          <button type="submit" class="btn btn-primary" id="btn-processar" disabled>Aplicar Regras Selecionadas</button>
+          <span id="sel-count" class="text-muted" style="margin-left:12px;">0 selecionado(s)</span>
+        </div>
+
+        <table class="table-professional">
+          <thead>
+            <tr>
+              <th style="width:36px;"><input type="checkbox" id="chk-all"></th>
+              <th>Status</th>
+              <th>Fornecedor</th>
+              <th>Nº NF-e</th>
+              <th>Produto (NF-e)</th>
+              <th>SKU</th>
+              <th>Compra</th>
+              <th>Valor Total</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in itens %}
+            {% set item = row.obj %}
+            <tr>
+              <td>
+                {% if row.tem_regra %}
+                  <input type="checkbox" name="item_nf_id" value="{{ item.id }}" class="chk-item">
+                {% else %}
+                  <input type="checkbox" disabled>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.tem_regra %}
+                  <span class="badge badge-ok">Regra OK</span>
+                  {% if row.fator_sugerido %}
+                    <small class="text-muted"> (fator {{ row.fator_sugerido|round(0) }})</small>
+                  {% endif %}
+                {% else %}
+                  <span class="badge badge-off">Sem regra</span>
+                {% endif %}
+              </td>
+              <td>{{ item.fornecedor or item.fornecedor_nome or '—' }}</td>
+              <td>{{ item.chave_nfe[-9:] }}…</td>
+              <td>{{ item.produto_nome }}</td>
+              <td>{{ item.produto_sku }}</td>
+              <td>{{ (item.quantidade_compra or 0)|int }} {{ item.unidade_compra }}</td>
+              <td>
+                {% set base = (item.quantidade_compra or 0) * (item.valor_unitario_compra or 0) %}
+                {% set vipi = item.valor_ipi or 0 %}
+                {% set vtc = (item.valor_total_compra if item.valor_total_compra else (item.valor_total_item if item.valor_total_item else (base + vipi))) %}
+                {{ vtc|float|round(2) }}
+              </td>
+              <td>
+                <a href="{{ url_for('estoque.processar_entradas_item', item_id=item.id) }}" class="btn btn-secondary btn-sm">
+                  Abrir Calculadora
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </form>
+    {% else %}
+      <div class="alert alert-success text-center" style="padding: 40px;">
+        <h3>Fila de Processamento Limpa!</h3>
+        <p>Não há itens de NF-e pendentes.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function(){
+  const chkAll = document.getElementById('chk-all');
+  const btn = document.getElementById('btn-processar');
+  const cnt = document.getElementById('sel-count');
+  const items = Array.from(document.querySelectorAll('.chk-item'));
+
+  function update(){
+    const n = items.filter(i => i.checked).length;
+    btn.disabled = n === 0;
+    cnt.textContent = n + ' selecionado(s)';
+  }
+  if (chkAll){
+    chkAll.addEventListener('change', () => {
+      items.forEach(i => { if (!i.disabled) i.checked = chkAll.checked; });
+      update();
+    });
+  }
+  items.forEach(i => i.addEventListener('change', update));
+  update();
+})();
+</script>
+{% endblock %}

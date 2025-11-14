@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <title>Shopee Analytics Pro</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; padding: 50px; margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px; margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            padding: 40px; border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .btn { 
+            display: inline-block; padding: 15px 30px; margin: 15px; 
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none; 
+            border-radius: 10px; font-weight: bold; transition: all 0.3s;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .btn:hover { 
+            background: rgba(255,255,255,0.3); 
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .title { font-size: 2.5em; margin-bottom: 20px; }
+        .subtitle { font-size: 1.2em; margin-bottom: 30px; opacity: 0.9; }
+        .features {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px; margin-top: 30px;
+        }
+        .feature {
+            background: rgba(255,255,255,0.1);
+            padding: 20px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .feature h3 { margin-top: 0; }
+        .status {
+            background: rgba(0,255,0,0.2);
+            padding: 10px; border-radius: 5px;
+            margin: 20px 0; border: 1px solid rgba(0,255,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🛍️ Shopee Analytics Pro</h1>
+        <p class="subtitle">Sistema avançado de análise de vendas da Shopee</p>
+        
+        <div class="status">
+            ✅ Módulo integrado com sucesso ao seu aplicativo Flask!
+        </div>
+        
+        <div>
+            <a href="{{ url_for('shopee.analytics') }}" class="btn">📊 Dashboard Principal</a>
+            <a href="{{ url_for('shopee.curva_abc') }}" class="btn">📈 Curva ABC</a>
+            <a href="{{ url_for('shopee.api_dashboard_data') }}" class="btn">🔗 API Dashboard</a>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>📊 Dashboard Completo</h3>
+                <p>Métricas em tempo real, gráficos interativos e KPIs estratégicos para análise completa das suas vendas na Shopee.</p>
+            </div>
+            <div class="feature">
+                <h3>📈 Curva ABC</h3>
+                <p>Classificação automática de produtos por importância e lucratividade, com recomendações estratégicas personalizadas.</p>
+            </div>
+            <div class="feature">
+                <h3>🚚 Análise de Transportadoras</h3>
+                <p>Performance detalhada por método de entrega, incluindo prazos, custos e satisfação do cliente.</p>
+            </div>
+            <div class="feature">
+                <h3>💰 Análise Financeira</h3>
+                <p>Margens de contribuição, custos operacionais, lucros e projeções para otimização de resultados.</p>
+            </div>
+            <div class="feature">
+                <h3>📈 Evolução Temporal</h3>
+                <p>Gráficos de evolução de vendas, receitas e margens ao longo do tempo com filtros personalizáveis.</p>
+            </div>
+            <div class="feature">
+                <h3>📤 Exportação de Dados</h3>
+                <p>Exporte relatórios completos em CSV, Excel ou JSON para análises externas e apresentações.</p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+            <p style="opacity: 0.8; font-size: 0.9em;">
+                Versão 3.2.0 | Desenvolvido por Manus AI Agent | 
+                <strong>{{ request.endpoint }}</strong>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

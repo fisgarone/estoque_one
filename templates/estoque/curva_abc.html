@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Análise de Curva ABC{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/dashboard_estoque.css') }}">
+<style>
+    .abc-card { border-left: 5px solid; padding: 20px; }
+    .abc-card.classe-a { border-color: #ff3e80; }
+    .abc-card.classe-b { border-color: #ffaa00; }
+    .abc-card.classe-c { border-color: #00c896; }
+
+    .table-container {
+        margin-top: 30px; background-color: var(--menu-bg-light);
+        border-radius: var(--border-radius); padding: 20px; box-shadow: var(--card-shadow-light);
+    }
+    .dark-theme .table-container { background-color: var(--menu-bg-dark); box-shadow: var(--card-shadow-dark); }
+    .styled-table { width: 100%; border-collapse: collapse; }
+    .styled-table thead tr { background-color: var(--primary-bright); color: white; text-align: left; }
+    .dark-theme .styled-table thead tr { background-color: var(--primary-dark); }
+    .styled-table th, .styled-table td { padding: 12px 15px; }
+    .styled-table tbody tr { border-bottom: 1px solid var(--menu-border-light); }
+    .dark-theme .styled-table tbody tr { border-bottom: 1px solid var(--menu-border-dark); }
+    .styled-table tbody tr:last-of-type { border-bottom: 2px solid var(--primary-bright); }
+    .dark-theme .styled-table tbody tr:last-of-type { border-bottom: 2px solid var(--primary-dark); }
+    .styled-table .classe-badge { padding: 5px 10px; border-radius: 20px; color: white; font-weight: bold; font-size: 1.2rem; }
+    .badge-a { background-color: #ff3e80; }
+    .badge-b { background-color: #ffaa00; }
+    .badge-c { background-color: #00c896; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1 class="dashboard-title">Análise de Curva ABC</h1>
+
+    {# ==== NORMALIZAÇÕES SEGURAS (evita UndefinedError) ==== #}
+    {% set total_valor = resumo.get('valor_total', resumo.get('total_value', 0)) %}
+    {% set total_itens = resumo.get('total_itens', resumo.get('total_items', 0)) %}
+
+    {% set A = resumo.get('A', {}) %}
+    {% set B = resumo.get('B', {}) %}
+    {% set C = resumo.get('C', {}) %}
+
+    {% set valor_A = A.get('valor', A.get('value', 0)) %}
+    {% set valor_B = B.get('valor', B.get('value', 0)) %}
+    {% set valor_C = C.get('valor', C.get('value', 0)) %}
+
+    {% set count_A = A.get('quantidade', A.get('count', 0)) %}
+    {% set count_B = B.get('quantidade', B.get('count', 0)) %}
+    {% set count_C = C.get('quantidade', C.get('count', 0)) %}
+
+    {% if total_valor > 0 %}
+    <!-- Cards de Resumo -->
+    <div class="cards-grid">
+        <div class="card abc-card classe-a">
+            <div class="card-icon"><i class="ri-vip-crown-line"></i></div>
+            <div class="card-content">
+                <span class="card-title">Classe A (Mais Importantes)</span>
+                <span class="card-value">{{ "%.0f"|format((count_A / (total_itens or 1)) * 100) }}% dos itens</span>
+                <small>Representam {{ "%.0f"|format((valor_A / (total_valor or 1)) * 100) }}% do valor (R$ {{ "%.2f"|format(valor_A) }})</small>
+            </div>
+        </div>
+
+        <div class="card abc-card classe-b">
+            <div class="card-icon"><i class="ri-star-half-line"></i></div>
+            <div class="card-content">
+                <span class="card-title">Classe B (Intermediários)</span>
+                <span class="card-value">{{ "%.0f"|format((count_B / (total_itens or 1)) * 100) }}% dos itens</span>
+                <small>Representam {{ "%.0f"|format((valor_B / (total_valor or 1)) * 100) }}% do valor (R$ {{ "%.2f"|format(valor_B) }})</small>
+            </div>
+        </div>
+
+        <div class="card abc-card classe-c">
+            <div class="card-icon"><i class="ri-seedling-line"></i></div>
+            <div class="card-content">
+                <span class="card-title">Classe C (Menos Importantes)</span>
+                <span class="card-value">{{ "%.0f"|format((count_C / (total_itens or 1)) * 100) }}% dos itens</span>
+                <small>Representam {{ "%.0f"|format((valor_C / (total_valor or 1)) * 100) }}% do valor (R$ {{ "%.2f"|format(valor_C) }})</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Pareto -->
+    <div class="chart-container" style="margin-top: 30px;">
+        <h2 class="chart-title">Gráfico de Pareto (Valor x % Acumulada)</h2>
+        <div style="position: relative; height: 400px; width: 100%;">
+            <canvas id="paretoChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Tabela Detalhada -->
+    <div class="table-container">
+        <h2 class="chart-title">Classificação Detalhada dos Produtos</h2>
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Classe</th>
+                    <th>Produto</th>
+                    <th>SKU</th>
+                    <th>Valor em Estoque</th>
+                    <th>% Individual</th>
+                    <th>% Acumulada</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos_classificados %}
+                <tr>
+                    <td><span class="classe-badge badge-{{ produto.classe|lower }}">{{ produto.classe }}</span></td>
+                    <td>{{ produto.nome }}</td>
+                    <td>{{ produto.sku }}</td>
+                    <td>R$ {{ "%.2f"|format(produto.get('valor_total', produto.get('total_value', 0))) }}</td>
+                    <td>{{ "%.2f"|format(produto.get('percentual_individual', 0)) }}%</td>
+                    <td>{{ "%.2f"|format(produto.get('percentual_acumulado', 0)) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="chart-container" style="text-align: center; padding: 50px;">
+        <i class="ri-information-line" style="font-size: 3rem; color: var(--primary-bright);"></i>
+        <h2 class="chart-title">Não há dados suficientes para gerar a análise.</h2>
+        <p>A Curva ABC é calculada com base no valor dos produtos em estoque. Certifique-se de que seus produtos tenham quantidade e custo cadastrados.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartData = {{ chart_data|tojson }};
+    if (chartData && chartData.labels && chartData.labels.length > 0) {
+        const ctx = document.getElementById('paretoChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    { label: 'Valor do Estoque (R$)', data: chartData.barData, backgroundColor: 'rgba(0, 191, 255, 0.6)', yAxisID: 'y' },
+                    { label: '% Acumulada', data: chartData.lineData, type: 'line',
+                      borderColor: '#ff3e80', backgroundColor: 'rgba(255, 62, 128, 0.2)', fill: true, tension: 0.4, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Valor em R$' } },
+                    y1: { type: 'linear', display: true, position: 'right', min: 0, max: 100,
+                          title: { display: true, text: 'Percentual Acumulado (%)' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

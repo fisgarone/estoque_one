@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if anuncio else 'Novo' }} Anúncio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/anuncio_form.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="anuncio-form-page">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-info">
+            <h1>
+                <i class="ri-{{ 'edit' if anuncio else 'add' }}-line"></i>
+                {{ 'Editar Anúncio' if anuncio else 'Novo Anúncio' }}
+            </h1>
+            <p>{{ 'Edite as informações do anúncio' if anuncio else 'Crie um novo anúncio com auxílio da IA' }}</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-outline" onclick="voltarLista()">
+                <i class="ri-arrow-left-line"></i> Voltar
+            </button>
+            <button class="btn-secondary" onclick="previewAnuncio()">
+                <i class="ri-eye-line"></i> Visualizar
+            </button>
+        </div>
+    </div>
+
+    <!-- Assistente IA -->
+    <div class="ai-assistant" id="aiAssistant">
+        <div class="ai-header" onclick="toggleAI()">
+            <div class="ai-icon">
+                <i class="ri-brain-line"></i>
+            </div>
+            <div class="ai-info">
+                <h3>Assistente IA</h3>
+                <p>Otimize seu anúncio automaticamente</p>
+            </div>
+            <div class="ai-toggle">
+                <i class="ri-arrow-down-s-line"></i>
+            </div>
+        </div>
+        
+        <div class="ai-content" id="aiContent">
+            <div class="ai-options">
+                <button class="ai-btn" onclick="otimizarTitulo()">
+                    <i class="ri-text"></i>
+                    <span>Otimizar Título</span>
+                </button>
+                <button class="ai-btn" onclick="gerarDescricao()">
+                    <i class="ri-file-text-line"></i>
+                    <span>Gerar Descrição</span>
+                </button>
+                <button class="ai-btn" onclick="sugerirPreco()">
+                    <i class="ri-price-tag-line"></i>
+                    <span>Sugerir Preço</span>
+                </button>
+                <button class="ai-btn" onclick="analisarConcorrencia()">
+                    <i class="ri-search-eye-line"></i>
+                    <span>Analisar Concorrência</span>
+                </button>
+            </div>
+            
+            <div class="ai-suggestions" id="aiSuggestions">
+                <!-- Sugestões aparecerão aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <form id="anuncioForm" class="anuncio-form">
+        <div class="form-sections">
+            <!-- Seção: Informações Básicas -->
+            <div class="form-section active" data-section="basicas">
+                <div class="section-header">
+                    <h3><i class="ri-information-line"></i> Informações Básicas</h3>
+                    <div class="section-progress">1/4</div>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="titulo">Título do Anúncio *</label>
+                        <div class="input-with-ai">
+                            <input type="text" id="titulo" name="titulo" 
+                                   value="{{ anuncio.titulo if anuncio else '' }}" 
+                                   maxlength="60" required>
+                            <button type="button" class="ai-optimize-btn" onclick="otimizarTitulo()" title="Otimizar com IA">
+                                <i class="ri-brain-line"></i>
+                            </button>
+                        </div>
+                        <div class="input-help">
+                            <span class="char-count">0/60 caracteres</span>
+                            <span class="help-text">Título claro e atrativo para seu produto</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="categoria">Categoria *</label>
+                        <input type="text" id="categoria" name="id_categoria" 
+                               value="{{ anuncio.id_categoria if anuncio else '' }}" 
+                               placeholder="Ex: MLB1055" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="condicao">Condição *</label>
+                        <select id="condicao" name="condicao" required>
+                            <option value="">Selecione...</option>
+                            <option value="new" {{ 'selected' if anuncio and anuncio.condicao == 'new' else '' }}>Novo</option>
+                            <option value="used" {{ 'selected' if anuncio and anuncio.condicao == 'used' else '' }}>Usado</option>
+                            <option value="refurbished" {{ 'selected' if anuncio and anuncio.condicao == 'refurbished' else '' }}>Recondicionado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="preco">Preço *</label>
+                        <div class="input-with-currency">
+                            <span class="currency">R$</span>
+                            <input type="number" id="preco" name="preco" step="0.01" 
+                                   value="{{ anuncio.preco if anuncio else '' }}" required>
+                            <button type="button" class="ai-optimize-btn" onclick="sugerirPreco()" title="Sugerir preço">
+                                <i class="ri-price-tag-line"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quantidade">Quantidade Disponível *</label>
+                        <input type="number" id="quantidade" name="quantidade_disponivel" min="1" 
+                               value="{{ anuncio.quantidade_disponivel if anuncio else '1' }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sku">SKU</label>
+                        <input type="text" id="sku" name="sku" 
+                               value="{{ anuncio.sku if anuncio else '' }}" 
+                               placeholder="Código interno do produto">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção: Descrição e Detalhes -->
+            <div class="form-section" data-section="descricao">
+                <div class="section-header">
+                    <h3><i class="ri-file-text-line"></i> Descrição e Detalhes</h3>
+                    <div class="section-progress">2/4</div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="descricao">Descrição do Produto</label>
+                    <div class="textarea-with-ai">
+                        <textarea id="descricao" name="descricao" rows="10" 
+                                  placeholder="Descreva seu produto de forma detalhada...">{{ anuncio.descricao if anuncio else '' }}</textarea>
+                        <div class="ai-toolbar">
+                            <button type="button" onclick="gerarDescricao()" title="Gerar descrição com IA">
+                                <i class="ri-brain-line"></i> Gerar com IA
+                            </button>
+                            <button type="button" onclick="melhorarDescricao()" title="Melhorar descrição">
+                                <i class="ri-magic-line"></i> Melhorar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="garantia">Garantia</label>
+                        <input type="text" id="garantia" name="garantia" 
+                               value="{{ anuncio.garantia if anuncio else '' }}" 
+                               placeholder="Ex: 12 meses">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="marca">Marca</label>
+                        <input type="text" id="marca" name="marca" 
+                               placeholder="Marca do produto">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modelo">Modelo</label>
+                        <input type="text" id="modelo" name="modelo" 
+                               placeholder="Modelo do produto">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cor">Cor</label>
+                        <input type="text" id="cor" name="cor" 
+                               placeholder="Cor principal">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção: Imagens -->
+            <div class="form-section" data-section="imagens">
+                <div class="section-header">
+                    <h3><i class="ri-image-line"></i> Imagens do Produto</h3>
+                    <div class="section-progress">3/4</div>
+                </div>
+
+                <div class="images-upload">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-placeholder">
+                            <i class="ri-upload-cloud-line"></i>
+                            <h4>Arraste imagens aqui ou clique para selecionar</h4>
+                            <p>Máximo 10 imagens (JPG, PNG, WebP)</p>
+                            <button type="button" class="btn-outline" onclick="selecionarImagens()">
+                                Selecionar Imagens
+                            </button>
+                        </div>
+                        <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="images-preview" id="imagesPreview">
+                        <!-- Imagens aparecerão aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção: Configurações Avançadas -->
+            <div class="form-section" data-section="avancadas">
+                <div class="section-header">
+                    <h3><i class="ri-settings-line"></i> Configurações Avançadas</h3>
+                    <div class="section-progress">4/4</div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="modoCompra">Modo de Compra</label>
+                        <select id="modoCompra" name="modo_compra">
+                            <option value="buy_it_now" {{ 'selected' if anuncio and anuncio.modo_compra == 'buy_it_now' else '' }}>Compre Já</option>
+                            <option value="auction" {{ 'selected' if anuncio and anuncio.modo_compra == 'auction' else '' }}>Leilão</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipoAnuncio">Tipo de Anúncio</label>
+                        <select id="tipoAnuncio" name="tipo_anuncio">
+                            <option value="gold_special" {{ 'selected' if anuncio and anuncio.tipo_anuncio == 'gold_special' else '' }}>Premium</option>
+                            <option value="gold_pro" {{ 'selected' if anuncio and anuncio.tipo_anuncio == 'gold_pro' else '' }}>Clássico</option>
+                            <option value="free" {{ 'selected' if anuncio and anuncio.tipo_anuncio == 'free' else '' }}>Gratuito</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modoEnvio">Modo de Envio</label>
+                        <select id="modoEnvio" name="modo_envio">
+                            <option value="me2" {{ 'selected' if anuncio and anuncio.modo_envio == 'me2' else '' }}>Mercado Envios</option>
+                            <option value="custom" {{ 'selected' if anuncio and anuncio.modo_envio == 'custom' else '' }}>Personalizado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="active" {{ 'selected' if anuncio and anuncio.status == 'active' else '' }}>Ativo</option>
+                            <option value="paused" {{ 'selected' if anuncio and anuncio.status == 'paused' else '' }}>Pausado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="usarIA" name="usar_ia" checked>
+                            <span class="checkmark"></span>
+                            Usar IA para otimizações automáticas
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="publicarImediatamente" name="publicar_imediatamente">
+                            <span class="checkmark"></span>
+                            Publicar imediatamente após salvar
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navegação entre seções -->
+        <div class="form-navigation">
+            <button type="button" class="btn-outline" id="prevBtn" onclick="previousSection()" style="display: none;">
+                <i class="ri-arrow-left-line"></i> Anterior
+            </button>
+            <div class="nav-indicators">
+                <span class="indicator active" data-section="basicas"></span>
+                <span class="indicator" data-section="descricao"></span>
+                <span class="indicator" data-section="imagens"></span>
+                <span class="indicator" data-section="avancadas"></span>
+            </div>
+            <button type="button" class="btn-primary" id="nextBtn" onclick="nextSection()">
+                Próximo <i class="ri-arrow-right-line"></i>
+            </button>
+        </div>
+
+        <!-- Botões de ação -->
+        <div class="form-actions">
+            <button type="button" class="btn-outline" onclick="salvarRascunho()">
+                <i class="ri-save-line"></i> Salvar Rascunho
+            </button>
+            <button type="submit" class="btn-primary">
+                <i class="ri-check-line"></i> {{ 'Atualizar Anúncio' if anuncio else 'Criar Anúncio' }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de Preview -->
+<div id="previewModal" class="modal-premium" style="display: none;">
+    <div class="modal-container large">
+        <div class="modal-header">
+            <h2><i class="ri-eye-line"></i> Preview do Anúncio</h2>
+            <button class="modal-close" onclick="fecharPreview()">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="previewContent">
+            <!-- Preview será carregado aqui -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/vendas/ml/anuncio_form.js') }}"></script>
+{% endblock %}

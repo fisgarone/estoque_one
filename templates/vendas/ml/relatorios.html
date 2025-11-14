@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Relatórios Mercado Livre{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/relatorios.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="relatorios-page">
+
+  <!-- Cabeçalho -->
+  <div class="page-header">
+    <div class="header-info">
+      <h1><i class="ri-bar-chart-2-line"></i> Relatórios Mercado Livre</h1>
+      <p>Visão consolidada de vendas e receita por período.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="btnExport">
+        <i class="ri-download-2-line"></i> Exportar
+      </button>
+      <button class="btn btn-outline" id="btnCompare">
+        <i class="ri-bar-chart-line"></i> Comparar
+      </button>
+      <button class="btn btn-secondary" id="btnDetails">
+        <i class="ri-eye-line"></i> Detalhes
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <section class="filtros-section">
+    <div class="filtros-grid">
+      <div class="filter">
+        <label for="periodo">Período</label>
+        <select id="periodo">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+        </select>
+      </div>
+      <div class="filter">
+        <label for="data_inicio">Data inicial (opcional)</label>
+        <input type="date" id="data_inicio">
+      </div>
+      <div class="filter">
+        <label for="data_fim">Data final (opcional)</label>
+        <input type="date" id="data_fim">
+      </div>
+      <div class="filter actions">
+        <label>&nbsp;</label>
+        <div class="filter-actions">
+          <button class="btn btn-primary" id="btnAplicar">
+            <i class="ri-filter-3-line"></i> Aplicar
+          </button>
+          <button class="btn btn-outline" id="btnLimpar">
+            <i class="ri-eraser-line"></i> Limpar
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid principal -->
+  <section class="relatorios-grid">
+    <!-- Card: Performance -->
+    <article class="relatorio-card full-width" id="cardPerformance">
+      <div class="card-header">
+        <h3><i class="ri-line-chart-line"></i> Performance de Vendas</h3>
+        <div class="card-actions">
+          <button class="btn chip" id="btnRefresh"><i class="ri-refresh-line"></i> Atualizar</button>
+          <button class="btn chip" id="btnPng"><i class="ri-image-line"></i> PNG</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="performance-metrics">
+          <div class="metric">
+            <div class="metric-value" id="kpiVendas">0</div>
+            <div class="metric-label">Vendas (un.)</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="kpiReceita">R$ 0,00</div>
+            <div class="metric-label">Receita</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="kpiTicket">R$ 0,00</div>
+            <div class="metric-label">Ticket Médio</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value" id="kpiDias">0</div>
+            <div class="metric-label">Dias no período</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="relatorioPerformanceChart"></canvas>
+        </div>
+      </div>
+    </article>
+
+    <!-- Card: Tabela diária -->
+    <article class="relatorio-card">
+      <div class="card-header">
+        <h3><i class="ri-calendar-check-line"></i> Série diária</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="relatorio-table" id="tblSerie">
+            <thead>
+              <tr>
+                <th>Dia</th>
+                <th>Vendas (un.)</th>
+                <th>Receita (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </article>
+
+    <!-- Card: Observações / Oportunidades -->
+    <article class="relatorio-card">
+      <div class="card-header">
+        <h3><i class="ri-lightbulb-line"></i> Observações</h3>
+      </div>
+      <div class="card-body">
+        <ul class="alertas-list" id="listaObservacoes">
+          <!-- preenchido via JS com base nos dados (sem dados fictícios) -->
+        </ul>
+      </div>
+    </article>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/vendas/ml/relatorios.js') }}"></script>
+{% endblock %}

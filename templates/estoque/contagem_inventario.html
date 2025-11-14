@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+
+{% block title %}Contagem: {{ inventario.nome }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/inventario.css') }}">
+<style>
+    /* ========== ESTILOS DO SISTEMA DE SCANNER ========== */
+    /* Controles do Scanner - Botão Fixo na Tela */
+    .scanner-controls {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        z-index: 1000;
+    }
+
+    .scanner-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-scan-mode {
+        background: linear-gradient(135deg, #00aaff, #0088cc);
+        color: white;
+    }
+
+    .btn-scan-mode.active {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+        transform: scale(1.1);
+    }
+
+    .btn-scan-mode:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 170, 255, 0.4);
+    }
+
+    .btn-scan-simulate {
+        background: linear-gradient(135deg, #ffc107, #ff922b);
+        color: white;
+    }
+
+    .btn-scan-simulate:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(255, 193, 7, 0.4);
+    }
+
+    /* Status do Scanner */
+    .scan-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        background: #00aaff;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 10px rgba(0, 170, 255, 0.3);
+        z-index: 1000;
+        display: none;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 170, 255, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(0, 170, 255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 170, 255, 0); }
+    }
+
+    /* Efeitos de destaque */
+    .scan-mode-active {
+        border: 2px solid #00aaff !important;
+        box-shadow: 0 0 20px rgba(0, 170, 255, 0.3) !important;
+    }
+
+    .scan-highlight {
+        animation: scanHighlight 2s ease;
+        background-color: rgba(0, 170, 255, 0.1) !important;
+    }
+
+    @keyframes scanHighlight {
+        0% {
+            background-color: rgba(0, 170, 255, 0.3) !important;
+            transform: scale(1.02);
+        }
+        100% {
+            background-color: rgba(0, 170, 255, 0.1) !important;
+            transform: scale(1);
+        }
+    }
+
+    /* Botão de copiar SKU */
+    .btn-copy-sku {
+        background: none;
+        border: none;
+        color: #00aaff;
+        cursor: pointer;
+        margin-left: 5px;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-copy-sku:hover {
+        color: #0088cc;
+        transform: scale(1.2);
+    }
+
+    /* Modal de configurações */
+    .scanner-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 2000;
+        backdrop-filter: blur(5px);
+    }
+
+    .scanner-modal-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 500px;
+        background: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .dark-theme .scanner-modal-content {
+        background: #1e3a5f;
+    }
+
+    .scanner-options {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .scanner-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Ajustes para a tabela com SKU */
+    .sku-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .sku-value {
+        font-family: monospace;
+        font-weight: 600;
+        color: #00aaff;
+    }
+
+    .dark-theme .sku-value {
+        color: #4fc3f7;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .scanner-controls {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .scanner-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+
+        .scan-status {
+            top: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            padding: 8px 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container inventario-page">
+    <div class="main-content-container" id="inventory-container">
+        <!-- CABEÇALHO DA PÁGINA -->
+        <div class="contagem-header">
+            <div class="contagem-title-section">
+                <a href="{{ url_for('estoque.inventarios') }}" class="back-link"><i class="ri-arrow-left-line"></i> Voltar para Gestão</a>
+                <h1 class="page-title">{{ inventario.nome }}</h1>
+                <p>Responsável: <strong>{{ inventario.responsavel or 'N/A' }}</strong> | Status: <span class="status-badge status-{{ inventario.status.lower().replace(' ', '-') }}">{{ inventario.status }}</span></p>
+            </div>
+            <div class="header-actions">
+                <button id="btn-finalizar-inventario" class="btn-primary-gradient">
+                    <i class="ri-check-double-line"></i> Finalizar e Ajustar
+                </button>
+            </div>
+        </div>
+
+        <!-- CARDS DE RESUMO E INFORMAÇÕES ADICIONAIS -->
+        <div class="summary-stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-title">Progresso da Contagem</div>
+                <div class="stat-card-value" id="progress-value">0/{{ itens|length }}</div>
+                <div id="progress-bar-container"><div id="progress-bar"></div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Divergência de Itens</div>
+                <div class="stat-card-value" id="divergence-items-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Valor da Divergência</div>
+                <div class="stat-card-value" id="divergence-cost-value">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Itens Escaneados</div>
+                <div class="stat-card-value" id="scanned-items-value">0</div>
+                <div class="stat-card-description">Modo scanner: <span id="scan-mode-status">Inativo</span></div>
+            </div>
+        </div>
+
+        <!-- TOOLBAR DE FERRAMENTAS -->
+        <div class="contagem-toolbar">
+            <input type="text" id="search-input" class="form-control" placeholder="Buscar por nome ou SKU...">
+            <select id="filter-select" class="form-control">
+                <option value="todos">Todos os Itens</option>
+                <option value="pendentes" selected>Apenas Pendentes</option>
+                <option value="contados">Apenas Contados</option>
+                <option value="divergentes">Com Divergência</option>
+            </select>
+            <button id="btn-scanner-settings" class="btn-primary-gradient" style="padding: 10px 15px;">
+                <i class="ri-barcode-line"></i> Configurar Scanner
+            </button>
+        </div>
+
+        <!-- TABELA DE CONTAGEM -->
+        <table class="table-contagem">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th class="text-center">SKU</th>
+                    <th class="text-center">Qtd. Sistema</th>
+                    <th class="text-center">Qtd. Contada</th>
+                    <th class="text-center">Divergência</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-table-body">
+                {% for item in itens %}
+                <tr class="inventory-item"
+                    data-item-id="{{ item.id }}"
+                    data-produto-id="{{ item.produto.id }}"
+                    data-nome="{{ item.produto.nome|lower }}"
+                    data-sku="{{ item.produto.sku|lower }}"
+                    data-custo="{{ item.produto.custo_unitario }}"
+                    data-quantidade-sistema="{{ item.quantidade_sistema }}">
+                    <td>
+                        <strong>{{ item.produto.nome }}</strong>
+                    </td>
+                    <td class="text-center sku-cell">
+                        <span class="sku-value">{{ item.produto.sku }}</span>
+                        <button class="btn-copy-sku" data-sku="{{ item.produto.sku }}" title="Copiar SKU">
+                            <i class="ri-file-copy-line"></i>
+                        </button>
+                    </td>
+                    <td class="text-center">
+                        <span class="qtd-sistema">{{ item.quantidade_sistema }}</span>
+                    </td>
+                    <td class="text-center">
+                        <input type="number" class="form-control-contagem"
+                               value="{{ item.quantidade_contada if item.quantidade_contada is not none else '' }}"
+                               placeholder="0" min="0"
+                               data-item-id="{{ item.id }}">
+                    </td>
+                    <td class="text-center">
+                        <span class="divergencia-badge">{{ item.divergencia }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="status-icon" title="Pendente"><i class="ri-hourglass-line"></i></span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ========== BOTÕES DE CONTROLE DO SCANNER ========== -->
+<!-- Estes botões agora estão visíveis e posicionados corretamente -->
+<div class="scanner-controls">
+    <div class="scan-status" id="scan-status">
+        <i class="ri-barcode-line"></i> Scanner Ativo - Escaneie os produtos
+    </div>
+    <button class="scanner-btn btn-scan-mode" id="btn-scan-mode" title="Ativar/Desativar Modo Scanner">
+        <i class="ri-barcode-line"></i>
+    </button>
+    <button class="scanner-btn btn-scan-simulate" id="btn-scan-simulate" title="Simular Leitura de Código">
+        <i class="ri-qr-scan-line"></i>
+    </button>
+</div>
+
+<!-- Modal de Configuração do Scanner -->
+<div class="scanner-modal" id="scanner-modal">
+    <div class="scanner-modal-content">
+        <h2><i class="ri-barcode-line"></i> Configurações do Scanner</h2>
+
+        <div class="scanner-options">
+            <div class="scanner-option">
+                <input type="checkbox" id="auto-increment" checked>
+                <label for="auto-increment">Incremento automático ao escanear</label>
+            </div>
+            <div class="scanner-option">
+                <input type="checkbox" id="play-sounds" checked>
+                <label for="play-sounds">Efeitos sonoros</label>
+            </div>
+            <div class="scanner-option">
+                <input type="checkbox" id="auto-focus" checked>
+                <label for="auto-focus">Foco automático no campo</label>
+            </div>
+            <div class="scanner-option">
+                <label for="scan-delay">Delay entre leituras (ms):</label>
+                <input type="number" id="scan-delay" value="500" min="100" max="2000" step="100">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" id="btn-close-scanner-modal">Fechar</button>
+            <button class="btn btn-primary" id="btn-save-scanner-settings">Salvar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/estoque/contagem_inventario.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variáveis de estado do scanner
+    let scanModeActive = false;
+    let lastScanTime = 0;
+    let scannedItems = new Set();
+    let scanDelay = 500; // ms entre leituras
+
+    // Elementos da UI - AGORA VISÍVEIS
+    const scanModeBtn = document.getElementById('btn-scan-mode');
+    const scanStatus = document.getElementById('scan-status');
+    const scanSimulateBtn = document.getElementById('btn-scan-simulate');
+    const inventoryContainer = document.getElementById('inventory-container');
+    const scannedItemsValue = document.getElementById('scanned-items-value');
+    const scanModeStatus = document.getElementById('scan-mode-status');
+    const scannerModal = document.getElementById('scanner-modal');
+    const scannerSettingsBtn = document.getElementById('btn-scanner-settings');
+    const closeScannerModalBtn = document.getElementById('btn-close-scanner-modal');
+    const saveScannerSettingsBtn = document.getElementById('btn-save-scanner-settings');
+
+    // Configurações do scanner
+    let scannerSettings = {
+        autoIncrement: true,
+        playSounds: true,
+        autoFocus: true,
+        scanDelay: 500
+    };
+
+    // Carregar configurações salvas
+    function loadScannerSettings() {
+        const savedSettings = localStorage.getItem('scannerSettings');
+        if (savedSettings) {
+            scannerSettings = {...scannerSettings, ...JSON.parse(savedSettings)};
+            document.getElementById('auto-increment').checked = scannerSettings.autoIncrement;
+            document.getElementById('play-sounds').checked = scannerSettings.playSounds;
+            document.getElementById('auto-focus').checked = scannerSettings.autoFocus;
+            document.getElementById('scan-delay').value = scannerSettings.scanDelay;
+            scanDelay = scannerSettings.scanDelay;
+        }
+    }
+
+    // Salvar configurações
+    function saveScannerSettings() {
+        scannerSettings.autoIncrement = document.getElementById('auto-increment').checked;
+        scannerSettings.playSounds = document.getElementById('play-sounds').checked;
+        scannerSettings.autoFocus = document.getElementById('auto-focus').checked;
+        scannerSettings.scanDelay = parseInt(document.getElementById('scan-delay').value);
+        scanDelay = scannerSettings.scanDelay;
+
+        localStorage.setItem('scannerSettings', JSON.stringify(scannerSettings));
+        scannerModal.style.display = 'none';
+        showNotification('Configurações do scanner salvas!', 'success');
+    }
+
+    // Alternar modo de varredura
+    function toggleScanMode() {
+        scanModeActive = !scanModeActive;
+
+        if (scanModeActive) {
+            // Ativar modo scanner
+            inventoryContainer.classList.add('scan-mode-active');
+            scanModeBtn.classList.add('active');
+            scanStatus.style.display = 'block';
+            scanModeStatus.textContent = 'Ativo';
+            scanSimulateBtn.style.display = 'flex';
+
+            // Preparar para receber scans
+            window.addEventListener('keydown', handleKeyDown);
+            showNotification('Modo scanner ativado! Escaneie os produtos.', 'info');
+
+            // Play sound if available
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBStztvLFjVcVAB1SgJqroZ+einI8FAAiYpivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hmQixkidTmsn8wDAAiZJivr5hm');
+                audio.play();
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        } else {
+            // Desativar modo scanner
+            inventoryContainer.classList.remove('scan-mode-active');
+            scanModeBtn.classList.remove('active');
+            scanStatus.style.display = 'none';
+            scanModeStatus.textContent = 'Inativo';
+            scanSimulateBtn.style.display = 'none';
+
+            // Remover listener
+            window.removeEventListener('keydown', handleKeyDown);
+            showNotification('Modo scanner desativado.', 'info');
+        }
+    }
+
+    // Processar código escaneado
+    function processScannedCode(code) {
+        const now = Date.now();
+
+        // Prevenir leituras muito rápidas (anti-duplicação)
+        if (now - lastScanTime < scanDelay) {
+            return;
+        }
+
+        lastScanTime = now;
+
+        // Limpar e formatar o código
+        code = code.trim().toUpperCase();
+
+        if (!code) {
+            return;
+        }
+
+        // Buscar item pelo SKU
+        const itemRow = findItemBySKU(code);
+
+        if (itemRow) {
+            // Item encontrado - processar
+            highlightItem(itemRow);
+            incrementItemQuantity(itemRow);
+            updateScannedItemsCount(itemRow);
+
+            showNotification(`✓ Produto escaneado: ${code}`, 'success', 2000);
+        } else {
+            // Item não encontrado
+            showNotification(`✗ SKU não encontrado: ${code}`, 'error', 3000);
+        }
+    }
+
+    // Encontrar item pelo SKU
+    function findItemBySKU(sku) {
+        const items = document.querySelectorAll('.inventory-item');
+        for (let item of items) {
+            const itemSKU = item.querySelector('.sku-value').textContent.trim().toUpperCase();
+            if (itemSKU === sku) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    // Destacar item na tabela
+    function highlightItem(itemRow) {
+        itemRow.classList.add('scan-highlight');
+        setTimeout(() => {
+            itemRow.classList.remove('scan-highlight');
+        }, 2000);
+
+        // Scroll para o item se não estiver visível
+        itemRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Incrementar quantidade do item
+    function incrementItemQuantity(itemRow) {
+        if (scannerSettings.autoIncrement) {
+            const inputField = itemRow.querySelector('.form-control-contagem');
+            const currentValue = parseInt(inputField.value) || 0;
+            inputField.value = currentValue + 1;
+
+            // Disparar evento de change para atualizar a interface
+            const event = new Event('change', { bubbles: true });
+            inputField.dispatchEvent(event);
+
+            // Focar no próximo campo se configurado
+            if (scannerSettings.autoFocus) {
+                setTimeout(() => {
+                    inputField.focus();
+                    inputField.select();
+                }, 100);
+            }
+        }
+    }
+
+    // Atualizar contador de itens escaneados
+    function updateScannedItemsCount(itemRow) {
+        const itemId = itemRow.dataset.itemId;
+        if (!scannedItems.has(itemId)) {
+            scannedItems.add(itemId);
+            scannedItemsValue.textContent = scannedItems.size;
+        }
+    }
+
+    // Handler para entrada de teclado (simula scanner)
+    function handleKeyDown(event) {
+        // Ignorar teclas de modificação e teclas especiais
+        if (event.ctrlKey || event.altKey || event.metaKey ||
+            event.key === 'Shift' || event.key === 'CapsLock' ||
+            event.key === 'Tab' || event.key === 'Escape') {
+            return;
+        }
+
+        // Se for Enter, processar o código acumulado
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (currentScanCode) {
+                processScannedCode(currentScanCode);
+                currentScanCode = '';
+            }
+            return;
+        }
+
+        // Acumular caracteres para formar o código
+        if (event.key.length === 1) {
+            currentScanCode += event.key;
+        }
+    }
+
+    // Simular leitura de código (para testes)
+    function simulateScan() {
+        const pendingItems = document.querySelectorAll('.inventory-item');
+        if (pendingItems.length > 0) {
+            const randomIndex = Math.floor(Math.random() * pendingItems.length);
+            const randomItem = pendingItems[randomIndex];
+            const sku = randomItem.querySelector('.sku-value').textContent;
+
+            processScannedCode(sku);
+        } else {
+            showNotification('Não há itens pendentes para simular.', 'info');
+        }
+    }
+
+    // Copiar SKU para área de transferência
+    function setupCopySKUButtons() {
+        document.querySelectorAll('.btn-copy-sku').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const sku = this.dataset.sku;
+                navigator.clipboard.writeText(sku).then(() => {
+                    showNotification(`SKU ${sku} copiado!`, 'success', 2000);
+                }).catch(err => {
+                    showNotification('Falha ao copiar SKU', 'error');
+                });
+            });
+        });
+    }
+
+    // Inicialização
+    let currentScanCode = '';
+
+    // Carregar configurações
+    loadScannerSettings();
+
+    // Configurar event listeners
+    scanModeBtn.addEventListener('click', toggleScanMode);
+    scanSimulateBtn.addEventListener('click', simulateScan);
+    scannerSettingsBtn.addEventListener('click', () => {
+        scannerModal.style.display = 'block';
+    });
+
+    closeScannerModalBtn.addEventListener('click', () => {
+        scannerModal.style.display = 'none';
+    });
+
+    saveScannerSettingsBtn.addEventListener('click', saveScannerSettings);
+
+    // Fechar modal ao clicar fora
+    scannerModal.addEventListener('click', (event) => {
+        if (event.target === scannerModal) {
+            scannerModal.style.display = 'none';
+        }
+    });
+
+    // Configurar botões de copiar SKU
+    setupCopySKUButtons();
+
+    // Para desenvolvimento: ativar modo simulação automaticamente
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        scanSimulateBtn.style.display = 'flex';
+    }
+
+    // Mostrar instruções iniciais
+    setTimeout(() => {
+        showNotification('Clique no botão de scanner no canto inferior direito para ativar o modo de varredura', 'info', 5000);
+    }, 2000);
+});
+</script>
+{% endblock %}

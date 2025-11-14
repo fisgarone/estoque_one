@@ -1,0 +1,690 @@
+/* === FISGAR NEON FINANCE (Painel Premium) === */
+body {
+  background: linear-gradient(135deg, #f9fdff 0%, #eafafe 100%);
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.fisgar-painel-neon {
+  max-width: 1200px;
+  margin: 30px auto 0 auto;
+  background: rgba(255,255,255,0.99);
+  border-radius: 24px;
+  box-shadow: 0 0 24px #7cfbff44;
+  padding: 30px 24px 48px 24px;
+}
+
+.fisgar-header-neon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1fbfd;
+  margin-bottom: 18px;
+}
+.fisgar-header-neon h1 {
+  font-size: 2.1em;
+  color: #12e6fa;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin: 0 0 0 0;
+}
+.fisgar-input-search {
+  border: none;
+  border-radius: 16px;
+  padding: 11px 22px;
+  font-size: 1.08em;
+  background: #f6fdff;
+  box-shadow: 0 0 0 2px #aaf7ff55;
+  outline: none;
+  min-width: 300px;
+  max-width: 400px;
+  transition: box-shadow .23s;
+}
+.fisgar-input-search:focus {
+  box-shadow: 0 0 0 3px #21cfff88;
+}
+
+.fisgar-cards-topo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 24px 0 28px 0;
+}
+.fisgar-card-topo {
+  background: linear-gradient(120deg, #e2faff 65%, #d6f6fd 100%);
+  box-shadow: 0 0 10px #0ff9ff22;
+  border-radius: 22px;
+  flex: 1 1 210px;
+  min-width: 170px;
+  min-height: 115px;
+  text-align: left;
+  position: relative;
+  padding: 23px 17px 19px 24px;
+  transition: box-shadow .27s;
+  margin: 0;
+}
+.fisgar-card-topo i {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  font-size: 1.65em;
+  color: #12e6fa88;
+}
+.fisgar-card-topo .num {
+  font-size: 2.4em;
+  font-weight: 700;
+  color: #17c9fa;
+  margin-bottom: 5px;
+  margin-top: 6px;
+}
+.fisgar-card-topo span {
+  font-size: 1.03em;
+  color: #444;
+  font-weight: 400;
+}
+
+/* Toolbar modos e filtros */
+.fisgar-toolbar-modos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.fisgar-btn-modo {
+  border: none;
+  background: #f6fdff;
+  color: #16bbff;
+  font-size: 1em;
+  padding: 9px 20px;
+  border-radius: 12px;
+  margin-right: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  box-shadow: 0 0 0 1.5px #d3fdff;
+  transition: background .2s, color .15s;
+}
+.fisgar-btn-modo.active, .fisgar-btn-modo:hover {
+  background: linear-gradient(120deg, #c4f7ff 20%, #83eaff 90%);
+  color: #02bfff;
+  box-shadow: 0 0 8px #5ef2ff44;
+}
+
+.fisgar-btn-principal {
+  background: linear-gradient(90deg, #07f8ff, #30ffe7 85%);
+  color: #155e64;
+  font-size: 1em;
+  border: none;
+  border-radius: 14px;
+  font-weight: 600;
+  box-shadow: 0 0 8px #6efefc33;
+  padding: 9px 22px;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: box-shadow .2s, background .2s;
+}
+.fisgar-btn-principal:disabled {
+  opacity: 0.53;
+  background: #c3f9fd;
+  color: #89c5cc;
+  cursor: not-allowed;
+}
+.fisgar-select-filtro {
+  border: none;
+  background: #f2feff;
+  border-radius: 12px;
+  font-size: 1em;
+  padding: 8px 18px;
+  color: #189fae;
+  margin-left: 13px;
+  outline: none;
+}
+
+/* View containers */
+#fisgar-view-modos {
+  margin-top: 10px;
+}
+
+/* === CARDS XML === */
+#fisgar-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 22px;
+}
+
+.fisgar-xml-card {
+  background: linear-gradient(120deg, #fbfeff 65%, #e8fafe 100%);
+  box-shadow: 0 0 13px #6ffbff29;
+  border-radius: 19px;
+  padding: 18px 16px 16px 22px;
+  min-height: 180px;
+  position: relative;
+  transition: box-shadow .19s;
+  border-left: 6px solid #22e7ff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabeçalho - Fornecedor (NOVO) */
+.fisgar-xml-card .card-fornecedor {
+  font-size: 1.15em;
+  font-weight: 700;
+  color: #0e6e9c;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+}
+
+.fisgar-xml-card .card-fornecedor i {
+  margin-right: 8px;
+  color: #12e6fa;
+}
+fisgar-xml-card h4 {
+  font-size: 1.18em;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: #0e6e9c;
+  display: none; /* Oculta o título duplicado */
+}
+
+.fisgar-xml-card .xml-chave {
+  font-size: 0.85em;
+  color: #0586b3;
+  word-break: break-all;
+  background: #f0faff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.fisgar-xml-card .xml-chave i {
+  margin-right: 6px;
+}
+
+.fisgar-xml-card .xml-status {
+  display: inline-block;
+  font-size: 0.85em;
+  margin: 6px 0 9px 0;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(90deg, #ffdb6e 10%, #ffe63d 90%);
+  padding: 5px 13px;
+  border-radius: 16px;
+  box-shadow: 0 0 4px #fffde8aa;
+}
+
+.fisgar-xml-card .xml-status.processado {
+  background: linear-gradient(90deg, #81ffd4 10%, #1fffae 90%);
+  color: #08583b;
+}
+
+/* Rodapé - Botões (AJUSTADO) */
+.fisgar-xml-card .xml-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.fisgar-xml-card .fisgar-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.82em;
+  background: #f2fdff;
+  color: #1ec9f5;
+  cursor: pointer;
+  transition: all .2s;
+  font-weight: 500;
+  box-shadow: 0 0 4px #d8feff33;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  flex: 1;
+  min-width: 80px;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.fisgar-xml-card .fisgar-btn i {
+  margin-right: 5px;
+}
+.fisgar-xml-card .fisgar-btn {
+  border: none;
+  border-radius: 8px; /* Reduzido de 12px */
+  padding: 5px 10px;  /* Reduzido de 7px 15px */
+  font-size: 0.85em;  /* Reduzido de 1em */
+  background: #f2fdff;
+  color: #1ec9f5;
+  cursor: pointer;
+  transition: background .2s, box-shadow .2s;
+  font-weight: 500;
+  box-shadow: 0 0 4px #d8feff33;
+  margin: 2px; /* Adicionado espaçamento */
+  white-space: nowrap; /* Impede quebra de linha */
+}
+.fisgar-xml-card .fisgar-btn:hover {
+  background: #e0fbff;
+  color: #048baf;
+  box-shadow: 0 0 12px #13f5ff22;
+}
+
+.fisgar-xml-card input[type=checkbox] {
+  margin-right: 8px;
+  accent-color: #09e0fc;
+}
+
+.fisgar-xml-card .fisgar-btn-detalhes {
+  color: #145a80;
+  background: #f4fdff;
+}
+
+.fisgar-xml-card .fisgar-btn-processar {
+  color: #0b7132;
+  background: linear-gradient(90deg, #c6ffea 10%, #70ffd9 90%);
+  font-weight: 600;
+}
+
+.fisgar-xml-card .fisgar-btn-processar:disabled {
+  opacity: 0.4;
+}
+
+.fisgar-xml-card .fisgar-btn-baixar {
+  color: #20577a;
+  background: #e9fcff;
+}
+
+.fisgar-xml-card .fisgar-btn-baixar:hover {
+  background: #c8f6ff;
+}
+
+/* === LISTA XML === */
+#fisgar-lista-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.fisgar-xml-lista-item {
+  background: linear-gradient(90deg, #e9fbff 80%, #d2fafd 100%);
+  border-radius: 17px;
+  margin-bottom: 15px;
+  box-shadow: 0 0 7px #39fff829;
+  padding: 18px 16px 13px 18px;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  justify-content: space-between;
+}
+.fisgar-xml-lista-item .xml-chave {
+  color: #17c9fa;
+  font-size: 0.97em;
+  word-break: break-all;
+}
+
+/* === TABELA XML === */
+#fisgar-tabela-container table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fbffff;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 25px;
+  box-shadow: 0 0 8px #f3faff44;
+}
+#fisgar-tabela-container th, #fisgar-tabela-container td {
+  padding: 13px 10px;
+  border-bottom: 1px solid #e3fafd;
+  font-size: 1.07em;
+}
+#fisgar-tabela-container th {
+  background: linear-gradient(90deg, #d7faff 90%, #fff 100%);
+  color: #18b6d6;
+  font-weight: 700;
+}
+#fisgar-tabela-container tr:last-child td {
+  border-bottom: none;
+}
+#fisgar-tabela-container .fisgar-btn {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.99em;
+}
+
+/* === MODAL NEON === */
+.fisgar-modal-bg {
+  position: fixed;
+  top:0; left:0; right:0; bottom:0;
+  z-index: 10005;
+  background: rgba(0,196,220,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInBg .2s;
+}
+@keyframes fadeInBg { from{ opacity:0 } to{ opacity:1 } }
+.fisgar-modal-neon {
+  background: #fafdff;
+  border-radius: 18px;
+  min-width: 330px;
+  max-width: 750px;
+  width: 94vw;
+  box-shadow: 0 0 38px #6fffff66;
+  animation: fadeInModal .22s;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+@keyframes fadeInModal { from{ transform: translateY(40px); opacity:0 } to{ transform:none; opacity:1 } }
+.fisgar-modal-neon .modal-header {
+  background: linear-gradient(90deg, #12e6fa 70%, #89f7fe 100%);
+  color: #fff;
+  padding: 19px 32px 13px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fisgar-modal-neon .modal-header h2 {
+  margin: 0;
+  font-size: 1.42em;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+.fisgar-btn-close {
+  background: transparent;
+  border: none;
+  font-size: 1.7em;
+  color: #fff;
+  cursor: pointer;
+  transition: color .17s;
+}
+.fisgar-btn-close:hover { color: #f43; }
+.fisgar-modal-neon .modal-body {
+  padding: 29px 32px 23px 32px;
+  color: #155e64;
+  font-size: 1.13em;
+}
+.fisgar-modal-neon .modal-footer {
+  padding: 0 32px 20px 32px;
+  background: none;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  border-top: none;
+}
+.fisgar-btn-secundario {
+  background: #e1fdff;
+  color: #00b3c9;
+  border: none;
+  border-radius: 13px;
+  font-weight: 500;
+  padding: 9px 23px;
+  font-size: 1.04em;
+  transition: background .19s;
+}
+.fisgar-btn-secundario:hover { background: #d0f8ff; color: #0a6787; }
+
+.fisgar-modal-neon .modal-body .detalhes-bloco {
+  margin-bottom: 17px;
+}
+.fisgar-modal-neon .produto-nfe {
+  background: #f7fafd;
+  border-radius: 9px;
+  padding: 13px 11px 10px 14px;
+  margin-bottom: 11px;
+  box-shadow: 0 0 6px #daf8fd22;
+}
+.fisgar-modal-neon .produto-nfe input,
+.fisgar-modal-neon .produto-nfe select {
+  background: #f5fdff;
+  border: 1.5px solid #5df6ff44;
+  border-radius: 6px;
+  font-size: 0.99em;
+  padding: 3px 9px;
+  margin-left: 7px;
+  margin-right: 10px;
+  width: 88px;
+  color: #156e79;
+}
+.fisgar-modal-neon .produto-nfe .valor-total {
+  font-weight: 700;
+  color: #04b5b2;
+  margin-left: 13px;
+  font-size: 1.12em;
+}
+
+@media (max-width: 800px) {
+  .fisgar-cards-topo { flex-direction: column; gap: 12px; }
+  .fisgar-card-topo { min-width: 120px; }
+  .fisgar-header-neon { flex-direction: column; gap: 12px; }
+  .fisgar-painel-neon { padding: 11px 3vw 22px 3vw;}
+  .fisgar-modal-neon .modal-body, .fisgar-modal-neon .modal-footer, .fisgar-modal-neon .modal-header { padding: 13px 8vw;}
+}
+
+/* === Resto do CSS... (continua com responsividade, foco, animação etc) */
+.neon-btn.neon-animate {
+  background: #fff;
+  color: #05e6e6;
+  border: 2px solid #05e6e6;
+  box-shadow: 0 0 8px #05e6e6, 0 0 18px #fff4 inset;
+  transition: 0.18s, box-shadow 0.18s;
+  font-weight: 600;
+  border-radius: 1.2em;
+  padding: 0.35em 1.2em;
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+}
+.neon-btn.neon-animate:hover, .neon-btn.neon-animate:focus {
+  color: #fff;
+  background: #05e6e6;
+  box-shadow: 0 0 24px #05e6e6, 0 0 28px #b1fff9;
+  transform: scale(1.045);
+}
+.neon-btn.neon-animate:active {
+  box-shadow: 0 0 4px #05e6e6;
+  background: #60fff4;
+}
+.produto-nfe .neon-btn {
+  margin-right: 0.5em;
+  margin-top: 0.5em;
+}
+/* Estilo do Modal - Fisgar Neon Pro */
+#modal-nfe-bg .produto-nfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+  background: #f8fafc;
+  border-radius: 13px;
+  border: 1px solid #e2e8f0;
+  padding: 18px 16px 10px 16px;
+  box-shadow: 0 2px 10px #d0f6ff26;
+  transition: box-shadow .18s;
+}
+#modal-nfe-bg .produto-nfe:hover {
+  box-shadow: 0 3px 18px #00e5ff33;
+  border-color: #05b8c7;
+}
+#modal-nfe-bg .produto-nfe .titulo-prod {
+  font-weight: 600;
+  font-size: 1.11em;
+  color: #009fd9;
+  margin-bottom: 0.2em;
+}
+#modal-nfe-bg .produto-nfe label {
+  font-size: 0.98em;
+  color: #444b;
+  font-weight: 500;
+  margin-right: 7px;
+}
+#modal-nfe-bg .produto-nfe input[type="text"],
+#modal-nfe-bg .produto-nfe input[type="number"] {
+  width: 76px;
+  padding: 2px 6px;
+  font-size: 0.98em;
+  border-radius: 6px;
+  border: 1px solid #cbe8f3;
+  margin-right: 8px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+#modal-nfe-bg .produto-nfe input:focus {
+  border-color: #05b8c7;
+}
+#modal-nfe-bg .produto-nfe .valor-total {
+  font-weight: 700;
+  color: #009688;
+  margin-left: auto;
+  font-size: 1.09em;
+}
+
+#modal-nfe-bg .grupo-btn-prod {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+#modal-nfe-bg .neon-btn,
+#modal-nfe-bg .btn-processar-individual,
+#modal-nfe-bg .btn-editar-individual {
+  background: #05b8c7;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.96em;
+  padding: 7px 14px 7px 12px;
+  font-weight: 600;
+  box-shadow: none;
+  transition: background .18s, transform .12s;
+  margin-top: 0;
+}
+#modal-nfe-bg .neon-btn:hover,
+#modal-nfe-bg .btn-processar-individual:hover,
+#modal-nfe-bg .btn-editar-individual:hover {
+  background: #02a3b3;
+  color: #fff;
+  transform: translateY(-2px) scale(1.04);
+}
+#modal-nfe-bg .btn-editar-individual {
+  background: #faad17;
+  color: #333;
+}
+#modal-nfe-bg .btn-editar-individual:hover {
+  background: #e3a110;
+  color: #222;
+}
+
+/* Ajuste responsivo */
+@media (max-width: 700px) {
+  #modal-nfe-bg .produto-nfe {
+      flex-direction: column;
+      gap: 9px 0;
+      padding: 10px 7px 8px 10px;
+  }
+  #modal-nfe-bg .grupo-btn-prod {
+      margin: 0 0 0 0;
+      justify-content: flex-start;
+  }
+
+.fornecedor-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #19e2fc;
+  margin-bottom: .25em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.xml-chave-wrap {
+  background: #fff8;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: .9em;
+  color: #444;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-bottom: .25em;
+}
+.fisgar-xml-card {
+  background: linear-gradient(120deg, #fbfeff 65%, #e8fafe 100%);
+  box-shadow: 0 0 13px #6ffbff29;
+  border-radius: 19px;
+  padding: 16px 14px 14px 20px;
+  min-height: 170px;
+  position: relative;
+  transition: box-shadow .19s;
+  border-left: 6px solid #22e7ff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fisgar-xml-card h4 {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #0e6e9c;
+  margin: 0 0 8px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xml-chave {
+  font-size: 0.8em;
+  color: #0586b3;
+  word-break: break-all;
+  background: #f0faff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 0 0 8px 0;
+}
+
+.xml-status {
+  display: inline-block;
+  font-size: 0.85em;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(90deg, #ffdb6e 10%, #ffe63d 90%);
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 0 4px #fffde8aa;
+  align-self: flex-start;
+}
+
+.xml-footer {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.fisgar-xml-card .fisgar-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.8em;
+  background: #f2fdff;
+  color: #1ec9f5;
+  cursor: pointer;
+  transition: all .2s;
+  font-weight: 500;
+  box-shadow: 0 0 4px #d8feff33;
+  white-space: nowrap;
+  flex-grow: 1;
+  text-align: center;
+}
+
+.fisgar-xml-card .fisgar-btn i {
+  margin-right: 3px;
+}
+

@@ -1,0 +1,690 @@
+{% extends "base.html" %}
+
+{% block title %}Shopee Analytics - Curva ABC{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ================================
+   CURVA ABC — VISUAL PROFISSIONAL
+   Paleta: azul celeste, cards “glass”
+   ================================= */
+
+/* Paleta local (sem interferir no base) */
+:root{
+  --abx-sky: #00bfff;            /* azul celeste principal */
+  --abx-sky-2: #67d2ff;          /* azul claro */
+  --abx-ink: #0b2142;            /* texto primário */
+  --abx-ink-2: #6b7b93;          /* texto secundário */
+  --abx-stroke: rgba(0, 191, 255, .18);
+  --abx-shadow: 0 10px 25px rgba(9, 41, 91, 0.1);
+  --abx-chip-bg: rgba(0,191,255,.1);
+  --abx-chip-bd: rgba(0,191,255,.35);
+  --abx-surface: rgba(255,255,255,.82);
+  --abx-grid: rgba(9,41,91,.08);
+}
+
+/* Dark */
+.dark-theme :root{
+  --abx-surface: rgba(4,10,25,.55);
+  --abx-ink: #eaf7ff;
+  --abx-ink-2: #b7c7dd;
+  --abx-stroke: rgba(0,191,255,.28);
+  --abx-grid: rgba(255,255,255,.08);
+}
+
+/* Fundo com névoa sutil */
+.abc-curva-abc{
+  padding: 28px;
+  position: relative;
+}
+.abc-curva-abc::before{
+  content:"";
+  position:absolute; inset:-80px -80px auto -80px; height:280px;
+  background: radial-gradient(1400px 300px at 20% -50px, rgba(103,210,255,.25), transparent 60%),
+              radial-gradient(1200px 260px at 80% -40px, rgba(0,191,255,.18), transparent 60%);
+  pointer-events:none; z-index:0;
+}
+
+/* Superfície “glass” para qualquer card/box */
+.abc-surface{
+  background: var(--abx-surface) !important;
+  border: 1px solid var(--abx-stroke) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--abx-shadow) !important;
+  backdrop-filter: saturate(140%) blur(8px);
+}
+
+/* Cabeçalho + filtros */
+.abc-header.abc-surface{ padding: 18px 20px; }
+.abc-title{ margin:0; color:var(--abx-ink); font-weight:800; letter-spacing:.2px; }
+.abc-sub{ margin:4px 0 0; color:var(--abx-ink-2); }
+
+.abc-btn{
+  border:1px solid var(--abx-stroke);
+  background: linear-gradient(180deg, var(--abx-sky), var(--abx-sky-2));
+  color:#fff; font-weight:800; border-radius: 14px; padding:10px 14px;
+  box-shadow: 0 6px 18px rgba(0,191,255,.22);
+  transition: filter 0.2s ease;
+}
+.abc-btn:hover{ filter: brightness(.98); }
+
+.abc-btn-ghost{
+  background: transparent; color: var(--abx-sky);
+  border:1.5px solid var(--abx-sky); font-weight:800; border-radius:14px; padding:10px 14px;
+  transition: background-color 0.2s ease;
+}
+.abc-btn-ghost:hover {
+  background-color: rgba(0, 191, 255, 0.1);
+}
+.abc-chip{
+  display:inline-flex; align-items:center; gap:.45rem;
+  background: var(--abx-chip-bg); border:1px solid var(--abx-chip-bd);
+  color: var(--abx-ink); border-radius: 100px; padding: .35rem .6rem; font-weight:700;
+}
+
+.form-control, .form-select{
+  background: rgba(255,255,255,.9);
+  border:1px solid var(--abx-stroke);
+  color: var(--abx-ink);
+  border-radius: 12px; padding:.6rem .75rem;
+}
+
+/* GRIDs responsivos */
+.abc-grid{
+  display:grid; gap:18px;
+}
+
+/* Cards KPI (A/B/C) */
+.kpi-grid{ grid-template-columns: repeat(12, 1fr); }
+.kpi-col{ grid-column: span 4; }
+@media (max-width: 992px){ .kpi-grid{ grid-template-columns:1fr; } .kpi-col{ grid-column:1/-1; } }
+
+.kpi-card{ padding:18px; display:flex; gap:14px; align-items:flex-start; }
+.kpi-icon{
+  width:46px; height:46px; border-radius:14px;
+  display:grid; place-items:center; color:var(--abx-sky);
+  background: linear-gradient(180deg, rgba(103,210,255,.18), rgba(103,210,255,.06));
+  border:1px solid var(--abx-stroke);
+}
+.kpi-value{ font-size:2.1rem; line-height:1; font-weight:900; color:var(--abx-ink); }
+.kpi-label{ margin-top:2px; color:var(--abx-ink-2); font-weight:700; }
+
+/* Charts */
+.chart-card{ padding:14px; min-height:420px; }
+.chart-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.chart-title{ color:var(--abx-ink); font-weight:800; margin:0; }
+.chart-box{ position:relative; height: 360px; }
+.chart-loading{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.chart-loading::after{
+  content:""; width:42px; height:42px; border:4px solid #eaf7ff; border-top-color: var(--abx-sky);
+  border-radius:50%; animation: spin .9s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); }}
+
+/* Cards de análise por classe */
+.info-card .metric{ font-size:1.8rem; font-weight:900; color:var(--abx-ink); }
+.info-card hr{ border-color: var(--abx-grid); }
+
+/* Tabela de ranking */
+.table-card{ padding:12px; }
+.table-wrap{ border-radius:12px; overflow:auto; max-height: 60vh; }
+.table{ width:100%; border-collapse:collapse; }
+.table th, .table td{ padding:.75rem .9rem; border-bottom:1px solid var(--abx-grid); }
+.table th{
+  position:sticky; top:0; z-index:1; background: var(--abx-surface);
+  border-bottom:2px solid var(--abx-sky); color:var(--abx-ink); font-weight:900;
+}
+.table tbody tr{ transition: background-color 0.2s ease; }
+.table tbody tr:hover{ background: rgba(103,210,255,.08); }
+.badge{ padding:.28rem .6rem; border-radius:999px; font-weight:900; font-size:.75rem; }
+.bg-success{ background:#09c37b; color:#fff; }
+.bg-warning{ background:#ffb400; color:#111; }
+.bg-danger { background:#e53e3e; color:#fff; }
+
+/* Alinhamento numérico */
+#abcRankingTable td:nth-child(4),
+#abcRankingTable td:nth-child(5),
+#abcRankingTable td:nth-child(6),
+#abcRankingTable td:nth-child(7),
+#abcRankingTable td:nth-child(8){ text-align:right; }
+
+/* Cartões padrão “surface” */
+.abc-card{ padding: 16px; }
+
+.abc-curva-abc .filters-row{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) auto; /* 3 campos + ações */
+  gap: 12px 16px;
+  align-items: end;
+  overflow-x: auto;                 /* se faltar espaço: scroll horizontal */
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.abc-curva-abc .filters-row .f { min-width: 220px; }
+.abc-curva-abc .filters-row .f-actions{
+  display:flex; gap:10px; align-items:center; white-space:nowrap;
+}
+
+/* Altura consistente dos inputs */
+.abc-curva-abc .form-control,
+.abc-curva-abc .form-select{ height:40px; }
+
+/* (Opcional) se algum CSS global tentar empilhar, garanta que NÃO quebre */
+@media (max-width: 1100px){
+  /* mantém uma linha, só habilita o scroll */
+  .abc-curva-abc .filters-row{ grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid abc-curva-abc">
+
+  <!-- Header / Filtros -->
+  <div class="abc-header abc-surface">
+    <div class="row g-3 align-items-center">
+      <div class="col-lg-7">
+        <h1 class="abc-title"><i class="fas fa-chart-bar me-2"></i> Análise Curva ABC</h1>
+        <p class="abc-sub">Classificação de produtos por importância e lucratividade</p>
+      </div>
+      <div class="col-lg-5 text-lg-end">
+        <span class="abc-chip me-2"><i class="ri-percent-line"></i> Curva ABC</span>
+        <button id="refreshAbcBtn" class="abc-btn me-2"><i class="fas fa-sync-alt me-1"></i> Atualizar</button>
+        <a href="{{ url_for('shopee.analytics_page') }}" class="abc-btn-ghost"><i class="fas fa-arrow-left me-1"></i> Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-row mt-3">
+      <div class="f">
+        <label for="abcDateStart">Data Início</label>
+        <input type="date" id="abcDateStart" class="form-control filter-control">
+      </div>
+
+      <div class="f">
+        <label for="abcDateEnd">Data Fim</label>
+        <input type="date" id="abcDateEnd" class="form-control filter-control">
+      </div>
+
+      <div class="f">
+        <label for="abcCriteria">Critério de Classificação</label>
+        <select id="abcCriteria" class="form-select filter-control">
+          <option value="receita">Receita</option>
+          <option value="lucro">Lucro</option>
+          <option value="margem">Margem de Contribuição</option>
+          <option value="quantidade">Quantidade</option>
+        </select>
+      </div>
+
+      <!-- FILTRO DE STATUS DO PEDIDO CORRIGIDO -->
+      <div class="f">
+        <label for="abcStatusPedido">Status do Pedido</label>
+        <select id="abcStatusPedido" class="form-select filter-control">
+          <option value="todas">Todos</option>
+          <!-- Opções preenchidas via JS -->
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs A/B/C -->
+  <div class="abc-grid kpi-grid mt-3">
+    <div class="kpi-col">
+      <div class="kpi-card abc-surface">
+        <div class="kpi-icon"><i class="fas fa-star"></i></div>
+        <div>
+          <div class="kpi-value" id="abc-class-a-count">0</div>
+          <div class="kpi-label">Classe A – Produtos Estratégicos</div>
+          <small class="text-muted">~80% do critério • Foco em anúncios</small>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-col">
+      <div class="kpi-card abc-surface">
+        <div class="kpi-icon"><i class="fas fa-balance-scale"></i></div>
+        <div>
+          <div class="kpi-value" id="abc-class-b-count">0</div>
+          <div class="kpi-label">Classe B – Intermediários</div>
+          <small class="text-muted">~15% do critério • Monitorar</small>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-col">
+      <div class="kpi-card abc-surface">
+        <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div>
+          <div class="kpi-value" id="abc-class-c-count">0</div>
+          <div class="kpi-label">Classe C – Baixo Impacto</div>
+          <small class="text-muted">~5% do critério • Revisar estratégia</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="abc-grid" style="grid-template-columns: 2fr 1fr; margin-top:18px;">
+    <div class="abc-surface chart-card">
+      <div class="chart-head">
+        <h5 class="chart-title"><i class="fas fa-chart-line me-2"></i>Curva ABC – % Acumulado</h5>
+      </div>
+      <div class="chart-box">
+        <div class="chart-loading"></div>
+        <canvas id="abcCurveChart"></canvas>
+      </div>
+    </div>
+    <div class="abc-surface chart-card">
+      <div class="chart-head">
+        <h5 class="chart-title"><i class="fas fa-chart-pie me-2"></i>Distribuição ABC</h5>
+      </div>
+      <div class="chart-box">
+        <div class="chart-loading"></div>
+        <canvas id="abcDistributionChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Análise por Classe -->
+  <div class="abc-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:18px;">
+    <div class="abc-surface abc-card info-card">
+      <h6 class="mb-2">Classe A – Estratégicos</h6>
+      <div class="metric" id="abc-a-revenue">R$ 0,00</div><div class="text-muted">Receita Total</div><hr>
+      <div class="metric" id="abc-a-margin">0%</div><div class="text-muted">MC Média</div><hr>
+      <div class="metric" id="abc-a-profit">R$ 0,00</div><div class="text-muted">Lucro Total</div>
+    </div>
+    <div class="abc-surface abc-card info-card">
+      <h6 class="mb-2">Classe B – Intermediários</h6>
+      <div class="metric" id="abc-b-revenue">R$ 0,00</div><div class="text-muted">Receita Total</div><hr>
+      <div class="metric" id="abc-b-margin">0%</div><div class="text-muted">MC Média</div><hr>
+      <div class="metric" id="abc-b-profit">R$ 0,00</div><div class="text-muted">Lucro Total</div>
+    </div>
+    <div class="abc-surface abc-card info-card">
+      <h6 class="mb-2">Classe C – Baixo Impacto</h6>
+      <div class="metric" id="abc-c-revenue">R$ 0,00</div><div class="text-muted">Receita Total</div><hr>
+      <div class="metric" id="abc-c-margin">0%</div><div class="text-muted">MC Média</div><hr>
+      <div class="metric" id="abc-c-profit">R$ 0,00</div><div class="text-muted">Lucro Total</div>
+    </div>
+  </div>
+
+  <!-- Ranking -->
+  <div class="abc-surface table-card mt-3">
+    <h5 class="chart-title mb-2"><i class="fas fa-list-ol me-2"></i>Ranking Completo – Curva ABC</h5>
+    <div class="table-wrap">
+      <table class="table table-hover" id="abcRankingTable">
+        <thead>
+          <tr>
+            <th>Posição</th>
+            <th>Classe</th>
+            <th>Produto</th>
+            <th>Receita</th>
+            <th>% Individual</th>
+            <th>% Acumulado</th>
+            <th>MC%</th>
+            <th>Lucro</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody><!-- preenchido via JS --></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recomendações -->
+  <div class="abc-grid" style="grid-template-columns: 1fr 1fr; margin-top:18px;">
+    <div class="abc-surface abc-card">
+      <h5 class="chart-title mb-2"><i class="fas fa-bullhorn me-2"></i>Classe A – Priorizar Anúncios</h5>
+      <div class="table-wrap" style="max-height: 45vh;">
+        <table class="table table-sm">
+          <thead><tr><th>Produto</th><th>Receita</th><th>MC%</th><th>Status</th></tr></thead>
+          <tbody id="classAProductsTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="abc-surface abc-card">
+      <h5 class="chart-title mb-2"><i class="fas fa-exclamation-circle me-2"></i>Classe C – Revisar Estratégia</h5>
+      <div class="table-wrap" style="max-height: 45vh;">
+        <table class="table table-sm">
+          <thead><tr><th>Produto</th><th>Receita</th><th>MC%</th><th>Ação</th></tr></thead>
+        <tbody id="classCProductsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const API_CURVA_ABC = "{{ url_for('shopee.api_curva_abc') }}";
+const API_FILTROS = "{{ url_for('shopee.api_filtros') }}";
+const fmtBRL = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtNum = v => Number(v||0).toLocaleString('pt-BR');
+
+class AbcAnalysis {
+  constructor(){
+    // Refs fixas (sem globais implícitas)
+    this.inputs = {
+      dateStart : document.getElementById('abcDateStart'),
+      dateEnd   : document.getElementById('abcDateEnd'),
+      criteria  : document.getElementById('abcCriteria'),
+      status    : document.getElementById('abcStatusPedido'),
+    };
+    this.$ = {
+      aCount   : document.getElementById('abc-class-a-count'),
+      bCount   : document.getElementById('abc-class-b-count'),
+      cCount   : document.getElementById('abc-class-c-count'),
+      aRevenue : document.getElementById('abc-a-revenue'),
+      bRevenue : document.getElementById('abc-b-revenue'),
+      cRevenue : document.getElementById('abc-c-revenue'),
+      aProfit  : document.getElementById('abc-a-profit'),
+      bProfit  : document.getElementById('abc-b-profit'),
+      cProfit  : document.getElementById('abc-c-profit'),
+      aMargin  : document.getElementById('abc-a-margin'),
+      bMargin  : document.getElementById('abc-b-margin'),
+      cMargin  : document.getElementById('abc-c-margin'),
+
+      tableBody: document.querySelector('#abcRankingTable tbody'),
+      listA    : document.getElementById('classAProductsTable'),
+      listC    : document.getElementById('classCProductsTable'),
+      curveCV  : document.getElementById('abcCurveChart'),
+      distCV   : document.getElementById('abcDistributionChart'),
+      loaders  : document.querySelectorAll('.chart-loading'),
+      btnRefresh: document.getElementById('refreshAbcBtn'),
+    };
+
+    this.abcData = [];
+    this.charts = {};
+    this.PAGE_LIMIT = 150;
+    this.debounceTimer = null;
+    this.cache = new Map();
+
+    this.bind();
+    this.loadFilterOptions();
+    this.load();
+  }
+
+  bind(){
+    const reload = () => this.debouncedLoad();
+    this.$.btnRefresh.addEventListener('click', reload);
+    [this.inputs.dateStart, this.inputs.dateEnd, this.inputs.criteria, this.inputs.status]
+      .forEach(el => el.addEventListener('change', reload));
+  }
+
+  debouncedLoad() {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => this.load(), 300);
+  }
+
+  setLoading(on=true){
+    this.$.loaders.forEach(el => el.style.display = on ? 'flex' : 'none');
+  }
+
+  // Função para carregar opções dos filtros - CORRIGIDA
+  async loadFilterOptions() {
+    try {
+      const res = await fetch(API_FILTROS);
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.status_pedido)) {
+        // Limpar opções existentes (exceto a primeira)
+        while (this.inputs.status.options.length > 1) {
+          this.inputs.status.remove(1);
+        }
+
+        // Adicionar novas opções
+        data.status_pedido.forEach(s => {
+          const option = document.createElement('option');
+          option.value = s;
+          option.textContent = this.formatStatusText(s);
+          this.inputs.status.appendChild(option);
+        });
+      }
+    } catch (e) {
+      console.error("Erro ao carregar filtros de status:", e);
+      // Fallback para opções padrão caso a API falhe
+      this.loadDefaultStatusOptions();
+    }
+  }
+
+  // Formatar texto do status para exibição
+  formatStatusText(status) {
+    const statusMap = {
+      'COMPLETED': 'Completos',
+      'PROCESSING': 'Processando',
+      'CANCELLED': 'Cancelados',
+      'SHIPPED': 'Enviados',
+      'READY_TO_SHIP': 'Pronto para envio',
+      'UNDELIVERED': 'Não entregue',
+      'RETURNED': 'Devolvido',
+      'UNPAID': 'Não pago'
+    };
+    return statusMap[status] || status;
+  }
+
+  // Carregar opções padrão caso a API falhe
+  loadDefaultStatusOptions() {
+    const defaultStatuses = ['COMPLETED', 'PROCESSING', 'CANCELLED', 'SHIPPED', 'READY_TO_SHIP'];
+
+    defaultStatuses.forEach(s => {
+      const option = document.createElement('option');
+      option.value = s;
+      option.textContent = this.formatStatusText(s);
+      this.inputs.status.appendChild(option);
+    });
+  }
+
+  async load(){
+    try{
+      this.setLoading(true);
+      const params = this.getCurrentParams();
+      const cacheKey = JSON.stringify(params);
+
+      // Verificar cache primeiro
+      if (this.cache.has(cacheKey)) {
+        this.abcData = this.cache.get(cacheKey);
+        this.updateUI();
+        return;
+      }
+
+      const p = new URLSearchParams();
+      const di = params.di;
+      const df = params.df;
+      const cr = params.cr;
+      const st = params.st;
+
+      if (di) p.append('data_inicio', di);
+      if (df) p.append('data_fim', df);
+      p.append('criterio', cr);
+      if (st && st.toLowerCase() !== 'todas') p.append('status_pedido', st);
+
+      const res = await fetch(`${API_CURVA_ABC}?${p.toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Falha na API');
+
+      this.abcData = Array.isArray(data.curva_abc) ? data.curva_abc : (data.ranking || []);
+
+      // Armazenar em cache
+      this.cache.set(cacheKey, this.abcData);
+
+      this.updateUI();
+    } catch (e){
+      console.error(e);
+      (window.showNotification?showNotification:alert)('Erro ao carregar Curva ABC: ' + e.message);
+    } finally {
+      this.setLoading(false);
+    }
+  }
+
+  getCurrentParams() {
+    return {
+      di: this.inputs.dateStart.value,
+      df: this.inputs.dateEnd.value,
+      cr: this.inputs.criteria.value || 'receita',
+      st: this.inputs.status.value
+    };
+  }
+
+  // Verificar se os parâmetros são iguais
+  areParamsEqual(a, b) {
+    return a && b && a.di === b.di && a.df === b.df && a.cr === b.cr && a.st === b.st;
+  }
+
+  updateUI() {
+    this.updateCards();
+    this.drawCharts();
+    this.fillRanking();
+    this.fillLists();
+  }
+
+  updateCards(){
+    const L=this.abcData;
+    const fil=c=>L.filter(i=>i.classe_abc===c);
+    const sum=(arr,k)=>arr.reduce((s,x)=>s+Number(x[k]||0),0);
+    const pc=(mc,rt)=>rt>0?(mc/rt*100):0;
+
+    const A=fil('A'), B=fil('B'), C=fil('C');
+
+    this.$.aCount.textContent = fmtNum(A.length);
+    this.$.bCount.textContent = fmtNum(B.length);
+    this.$.cCount.textContent = fmtNum(C.length);
+
+    const aR=sum(A,'VALOR_TOTAL'), bR=sum(B,'VALOR_TOTAL'), cR=sum(C,'VALOR_TOTAL');
+    const aL=sum(A,'LUCRO_REAL'),  bL=sum(B,'LUCRO_REAL'),  cL=sum(C,'LUCRO_REAL');
+    const aMC=sum(A,'MARGEM_CONTRIBUICAO'), bMC=sum(B,'MARGEM_CONTRIBUICAO'), cMC=sum(C,'MARGEM_CONTRIBUICAO');
+
+    this.$.aRevenue.textContent = fmtBRL(aR);
+    this.$.bRevenue.textContent = fmtBRL(bR);
+    this.$.cRevenue.textContent = fmtBRL(cR);
+
+    this.$.aProfit.textContent = fmtBRL(aL);
+    this.$.bProfit.textContent = fmtBRL(bL);
+    this.$.cProfit.textContent = fmtBRL(cL);
+
+    this.$.aMargin.textContent = `${pc(aMC,aR).toFixed(2)}%`;
+    this.$.bMargin.textContent = `${pc(bMC,bR).toFixed(2)}%`;
+    this.$.cMargin.textContent = `${pc(cMC,cR).toFixed(2)}%`;
+  }
+
+  drawCharts(){
+    this.setLoading(true);
+    const L = this.abcData;
+    const curveLabels = L.map(i => i.produto);
+    const curveData = L.map(i => i.percentual_acumulado);
+
+    if (this.charts.curve) this.charts.curve.destroy();
+    this.charts.curve = new Chart(this.$.curveCV, {
+      type: 'line',
+      data: {
+        labels: curveLabels,
+        datasets: [{
+          label: '% Acumulado',
+          data: curveData,
+          borderColor: '#00bfff',
+          backgroundColor: 'rgba(0, 191, 255, 0.1)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100, title: { display: true, text: '%' } },
+          x: { display: false }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    const distData = [L.filter(i => i.classe_abc === 'A').length,
+                      L.filter(i => i.classe_abc === 'B').length,
+                      L.filter(i => i.classe_abc === 'C').length];
+
+    if (this.charts.distribution) this.charts.distribution.destroy();
+    this.charts.distribution = new Chart(this.$.distCV, {
+      type: 'pie',
+      data: {
+        labels: ['Classe A', 'Classe B', 'Classe C'],
+        datasets: [{
+          data: distData,
+          backgroundColor: ['#00bfff', '#67d2ff', '#b7c7dd'],
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } }
+      }
+    });
+    this.setLoading(false);
+  }
+
+  fillRanking(){
+    const tbody = this.$.tableBody;
+    tbody.innerHTML = '';
+    if (this.abcData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center">Nenhum dado encontrado para os filtros selecionados.</td></tr>';
+      return;
+    }
+
+    // Usar DocumentFragment para melhor performance
+    const fragment = document.createDocumentFragment();
+
+    this.abcData.forEach(item => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${item.ranking}</td>
+        <td><span class="badge bg-${item.classe_abc === 'A' ? 'success' : (item.classe_abc === 'B' ? 'warning' : 'danger')}">${item.classe_abc}</span></td>
+        <td>${item.produto}</td>
+        <td>${fmtBRL(item.VALOR_TOTAL)}</td>
+        <td>${item.percentual.toFixed(2)}%</td>
+        <td>${item.percentual_acumulado.toFixed(2)}%</td>
+        <td>${item.mc_percentual.toFixed(2)}%</td>
+        <td>${fmtBRL(item.LUCRO_REAL)}</td>
+        <td><button class="btn btn-sm btn-outline-primary">Detalhes</button></td>
+      `;
+      fragment.appendChild(row);
+    });
+
+    tbody.appendChild(fragment);
+  }
+
+  fillLists(){
+    const classA = this.abcData.filter(item => item.classe_abc === 'A');
+    const classC = this.abcData.filter(item => item.classe_abc === 'C');
+
+    const fillTable = (tableBody, data) => {
+      tableBody.innerHTML = '';
+      if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Nenhum produto nesta classe.</td></tr>';
+        return;
+      }
+
+      // Usar DocumentFragment para melhor performance
+      const fragment = document.createDocumentFragment();
+
+      data.slice(0, 10).forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${item.produto}</td>
+          <td>${fmtBRL(item.VALOR_TOTAL)}</td>
+          <td>${item.mc_percentual.toFixed(2)}%</td>
+          <td><span class="badge bg-${item.LUCRO_REAL > 0 ? 'success' : 'danger'}">${item.LUCRO_REAL > 0 ? 'Lucrativo' : 'Prejuízo'}</span></td>
+        `;
+        fragment.appendChild(row);
+      });
+
+      tableBody.appendChild(fragment);
+    };
+
+    fillTable(this.$.listA, classA);
+    fillTable(this.$.listC, classC);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.abcAnalysis = new AbcAnalysis();
+});
+</script>
+{% endblock %}

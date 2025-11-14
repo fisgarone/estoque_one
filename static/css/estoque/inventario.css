@@ -1,0 +1,879 @@
+/* static/css/estoque/inventario.css (VERSÃO CORRIGIDA MODO ESCURO) */
+
+/* --- Variáveis compatíveis com base.html --- */
+:root {
+    --inv-bg-page: var(--bg-light);
+    --inv-primary-blue: var(--primary-light);
+    --inv-primary-blue-dark: var(--primary-bright);
+    --inv-secondary-blue: rgba(0, 191, 255, 0.1);
+    --inv-container-bg: var(--menu-bg-light);
+    --inv-card-bg: var(--menu-bg-light);
+    --inv-text-dark: var(--text-light);
+    --inv-text-light: var(--text-light-contrast);
+    --inv-border-color: var(--menu-border-light);
+    --inv-success: var(--success-color);
+    --inv-danger: var(--error-color);
+    --inv-warning: var(--warning-color);
+    --inv-shadow: var(--card-shadow-light);
+    --inv-shadow-hover: 0 12px 40px rgba(0, 136, 255, 0.25);
+    --inv-card-radius: var(--border-radius);
+    --inv-element-radius: var(--border-radius-sm);
+    --inv-transition: all var(--transition-speed) ease;
+}
+
+/* CORREÇÃO: Usar a classe .dark-theme em vez de [data-theme="dark"] */
+.dark-theme {
+    --inv-bg-page: var(--bg-dark);
+    --inv-primary-blue: var(--primary-dark);
+    --inv-primary-blue-dark: var(--primary-dark-bright);
+    --inv-secondary-blue: rgba(0, 240, 255, 0.1);
+    --inv-container-bg: var(--menu-bg-dark);
+    --inv-card-bg: var(--menu-bg-dark);
+    --inv-text-dark: var(--text-dark);
+    --inv-text-light: var(--text-dark);
+    --inv-border-color: var(--menu-border-dark);
+    --inv-success: var(--success-dark);
+    --inv-danger: var(--error-dark);
+    --inv-warning: var(--warning-dark);
+    --inv-shadow: var(--card-shadow-dark);
+    --inv-shadow-hover: 0 12px 40px rgba(0, 68, 128, 0.3);
+}
+
+/* --- Estrutura Principal (comum a ambas as telas) --- */
+body {
+    background-color: var(--inv-bg-page) !important;
+    transition: var(--inv-transition);
+}
+
+.page-container.inventario-page {
+    padding: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.main-content-container {
+    background-color: var(--inv-container-bg);
+    border-radius: var(--inv-card-radius);
+    padding: 30px;
+    box-shadow: var(--inv-shadow);
+    border: 1px solid var(--inv-border-color);
+    transition: var(--inv-transition);
+    backdrop-filter: blur(10px);
+}
+
+/* --- Cabeçalho da Página (comum) --- */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--inv-border-color);
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--inv-primary-blue);
+    text-shadow: 0 2px 4px rgba(0, 136, 255, 0.1);
+    margin: 0;
+}
+
+/* --- Botões com Gradiente (comum) --- */
+.btn-primary-gradient {
+    background: linear-gradient(135deg, var(--inv-primary-blue) 0%, var(--inv-primary-blue-dark) 100%);
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: var(--inv-element-radius);
+    transition: var(--inv-transition);
+    cursor: pointer;
+    box-shadow: var(--inv-shadow);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary-gradient:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--inv-shadow-hover);
+}
+
+/* ======================================================== */
+/* --- ESTILOS ESPECÍFICOS PARA TELA DE GESTÃO --- */
+/* ======================================================== */
+
+/* --- Cards de Estatísticas --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 35px;
+}
+
+.stat-card {
+    background-color: var(--inv-card-bg);
+    border-radius: var(--inv-card-radius);
+    padding: 25px;
+    border: 1px solid var(--inv-border-color);
+    box-shadow: var(--inv-shadow);
+    transition: var(--inv-transition);
+    backdrop-filter: blur(5px);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--inv-primary-blue), var(--inv-primary-blue-dark));
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--inv-shadow-hover);
+}
+
+.stat-card-title {
+    font-size: 0.95rem;
+    color: var(--inv-text-light);
+    margin-bottom: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.stat-card-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--inv-text-dark);
+    margin: 5px 0;
+}
+
+.stat-card-value.positive { color: var(--inv-success); }
+.stat-card-value.negative { color: var(--inv-danger); }
+
+.stat-card-description {
+    font-size: 0.85rem;
+    color: var(--inv-text-light);
+    margin-top: 10px;
+}
+
+/* --- Tabela Profissional --- */
+.table-professional {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+}
+
+.table-professional thead th {
+    background: linear-gradient(to bottom, var(--inv-primary-blue), var(--inv-primary-blue-dark));
+    color: white;
+    padding: 18px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-professional thead th:first-child {
+    border-radius: var(--inv-element-radius) 0 0 var(--inv-element-radius);
+}
+
+.table-professional thead th:last-child {
+    border-radius: 0 var(--inv-element-radius) var(--inv-element-radius) 0;
+}
+
+.table-professional tbody tr {
+    transition: var(--inv-transition);
+    background-color: var(--inv-card-bg);
+}
+
+.table-professional tbody tr:nth-child(even) {
+    background-color: var(--inv-secondary-blue);
+}
+
+.table-professional tbody tr:hover {
+    background-color: rgba(0, 170, 255, 0.05);
+    transform: scale(1.005);
+    box-shadow: 0 4px 10px rgba(0, 136, 255, 0.1);
+}
+
+.table-professional tbody td {
+    padding: 16px;
+    border-bottom: 1px solid var(--inv-border-color);
+    vertical-align: middle;
+    position: relative;
+}
+
+/* --- Badges de Status --- */
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-align: center;
+    display: inline-block;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.status-em-andamento {
+    background: linear-gradient(135deg, #FFFBEA, #FEF3C7);
+    color: #B45309;
+    border: 1px solid #FDE68A;
+}
+
+.status-concluido {
+    background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+    color: #15803D;
+    border: 1px solid #A7F3D0;
+}
+
+.status-cancelado {
+    background: linear-gradient(135deg, #F1F5F9, #E2E8F0);
+    color: #475569;
+    border: 1px solid #E2E8F0;
+}
+
+/* --- Botões de Ação --- */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--inv-secondary-blue);
+    color: var(--inv-primary-blue);
+    border: 1px solid var(--inv-border-color);
+    transition: var(--inv-transition);
+    margin-right: 8px;
+    text-decoration: none;
+}
+
+.btn-action:hover {
+    background-color: var(--inv-primary-blue);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 136, 255, 0.2);
+}
+
+.btn-action.btn-danger {
+    color: var(--inv-danger);
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.btn-action.btn-danger:hover {
+    background-color: var(--inv-danger);
+    color: white;
+}
+
+/* --- Formulário de Novo Inventário --- */
+.new-inventory-form-container {
+    display: none;
+    margin-top: 30px;
+    border-radius: var(--inv-card-radius);
+    overflow: hidden;
+    border: 1px solid var(--inv-border-color);
+    box-shadow: var(--inv-shadow);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.new-inventory-form-header {
+    background: linear-gradient(135deg, var(--inv-primary-blue), var(--inv-primary-blue-dark));
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.new-inventory-form-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.new-inventory-form-header .close-icon {
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.new-inventory-form-header .close-icon:hover {
+    transform: rotate(90deg);
+}
+
+.new-inventory-form-body {
+    padding: 30px;
+    background-color: var(--inv-secondary-blue);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    align-items: start;
+    gap: 20px;
+}
+
+.form-grid label {
+    font-weight: 600;
+    text-align: right;
+    color: var(--inv-text-light);
+    padding-top: 12px;
+}
+
+.new-inventory-form-footer {
+    padding: 20px 30px;
+    text-align: right;
+    background-color: var(--inv-secondary-blue);
+    border-top: 1px solid var(--inv-border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+/* ======================================================== */
+/* --- ESTILOS ESPECÍFICOS PARA TELA DE CONTAGEM --- */
+/* ======================================================== */
+
+/* --- Cabeçalho de Contagem --- */
+.contagem-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.contagem-title-section .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--inv-text-light);
+    text-decoration: none;
+    margin-bottom: 12px;
+    padding: 8px 16px;
+    border-radius: var(--inv-element-radius);
+    background-color: var(--inv-secondary-blue);
+    transition: var(--inv-transition);
+}
+
+.contagem-title-section .back-link:hover {
+    color: var(--inv-primary-blue);
+    background-color: var(--inv-border-color);
+    transform: translateX(-5px);
+}
+
+/* --- Cards de Resumo (Contagem) --- */
+.summary-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-bottom: 35px;
+}
+
+/* --- Barra de Progresso Estilizada --- */
+#progress-bar-container {
+    width: 100%;
+    height: 10px;
+    background-color: var(--inv-secondary-blue);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 15px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--inv-primary-blue), var(--inv-primary-blue-dark));
+    transition: width 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+    border-radius: 10px;
+    position: relative;
+}
+
+#progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: progressShine 2s infinite;
+}
+
+@keyframes progressShine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* --- Toolbar de Ferramentas (Contagem) --- */
+.contagem-toolbar {
+    background-color: var(--inv-secondary-blue);
+    border: 1px solid var(--inv-border-color);
+    border-radius: var(--inv-card-radius);
+    padding: 20px;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: var(--inv-shadow);
+}
+
+.contagem-toolbar #search-input {
+    flex-grow: 1;
+    min-width: 200px;
+}
+
+/* --- Tabela de Contagem --- */
+.table-contagem {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+}
+
+.table-contagem thead th {
+    background: linear-gradient(to bottom, var(--inv-primary-blue), var(--inv-primary-blue-dark));
+    color: white;
+    padding: 18px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-contagem thead th:first-child {
+    border-radius: var(--inv-element-radius) 0 0 var(--inv-element-radius);
+}
+
+.table-contagem thead th:last-child {
+    border-radius: 0 var(--inv-element-radius) var(--inv-element-radius) 0;
+}
+
+.table-contagem tbody tr {
+    transition: var(--inv-transition);
+    background-color: var(--inv-card-bg);
+}
+
+.table-contagem tbody tr:nth-child(even) {
+    background-color: var(--inv-secondary-blue);
+}
+
+.table-contagem tbody tr:hover {
+    background-color: rgba(0, 170, 255, 0.05);
+    transform: scale(1.005);
+    box-shadow: 0 4px 10px rgba(0, 136, 255, 0.1);
+}
+
+.table-contagem tbody td {
+    padding: 16px;
+    border-bottom: 1px solid var(--inv-border-color);
+    vertical-align: middle;
+    position: relative;
+}
+
+.table-contagem tbody td small {
+    color: var(--inv-text-light);
+    display: block;
+    margin-top: 5px;
+}
+
+.table-contagem .form-control-contagem {
+    width: 100px;
+    padding: 12px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: 2px solid var(--inv-border-color);
+    border-radius: var(--inv-element-radius);
+    background-color: var(--inv-card-bg);
+    transition: var(--inv-transition);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table-contagem .form-control-contagem:focus {
+    border-color: var(--inv-primary-blue);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.2);
+}
+
+.table-contagem .divergencia-badge {
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.table-contagem .divergencia-badge.positivo {
+    color: var(--inv-success);
+    background-color: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.table-contagem .divergencia-badge.negativo {
+    color: var(--inv-danger);
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.table-contagem .status-icon {
+    font-size: 1.5rem;
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    line-height: 40px;
+    text-align: center;
+    background-color: var(--inv-secondary-blue);
+    color: var(--inv-primary-blue);
+}
+
+.table-contagem .status-icon .spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- Form Controls (comum) --- */
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--inv-border-color);
+    border-radius: var(--inv-element-radius);
+    background-color: var(--inv-card-bg);
+    color: var(--inv-text-dark);
+    transition: var(--inv-transition);
+    font-family: 'Inter', sans-serif;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--inv-primary-blue);
+    box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.2);
+}
+
+textarea.form-control {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* --- Botões Secundários (comum) --- */
+.btn {
+    padding: 10px 20px;
+    border-radius: var(--inv-element-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--inv-transition);
+    border: none;
+    font-family: 'Inter', sans-serif;
+}
+
+.btn-secondary {
+    background-color: var(--inv-secondary-blue);
+    color: var(--inv-text-light);
+    border: 1px solid var(--inv-border-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--inv-border-color);
+    transform: translateY(-2px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--inv-primary-blue), var(--inv-primary-blue-dark));
+    color: white;
+    box-shadow: var(--inv-shadow);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--inv-shadow-hover);
+}
+
+/* --- Mensagem de Lista Vazia (comum) --- */
+.table-professional tbody tr td[colspan],
+.table-contagem tbody tr td[colspan] {
+    text-align: center;
+    padding: 40px;
+    color: var(--inv-text-light);
+    font-style: italic;
+}
+
+/* --- Animações (comum) --- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.main-content-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* --- Responsividade (comum) --- */
+@media (max-width: 1200px) {
+    .page-container.inventario-page {
+        padding: 15px;
+    }
+
+    .main-content-container {
+        padding: 20px;
+    }
+
+    .stats-grid,
+    .summary-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .page-header,
+    .contagem-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .form-grid label {
+        text-align: left;
+        padding-top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .stats-grid,
+    .summary-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .table-professional,
+    .table-contagem {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .new-inventory-form-body {
+        padding: 20px;
+    }
+
+    .new-inventory-form-footer,
+    .contagem-toolbar {
+        flex-direction: column;
+    }
+
+    .new-inventory-form-footer .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .contagem-toolbar #search-input {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-container.inventario-page {
+        padding: 10px;
+    }
+
+    .main-content-container {
+        padding: 15px;
+        border-radius: calc(var(--inv-card-radius) - 5px);
+    }
+
+    .btn-primary-gradient {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+
+    .stat-card {
+        padding: 20px;
+    }
+
+    .table-contagem tbody td {
+        padding: 12px 8px;
+    }
+
+    .table-contagem .form-control-contagem {
+        width: 80px;
+        padding: 8px;
+    }
+}
+
+/* --- Correções específicas para modo escuro --- */
+.dark-theme .status-em-andamento {
+    background: linear-gradient(135deg, rgba(255, 251, 234, 0.15), rgba(254, 243, 199, 0.15));
+    color: #FCD34D;
+    border: 1px solid rgba(253, 230, 138, 0.3);
+}
+
+.dark-theme .status-concluido {
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.15), rgba(220, 252, 231, 0.15));
+    color: #34D399;
+    border: 1px solid rgba(167, 243, 208, 0.3);
+}
+
+.dark-theme .status-cancelado {
+    background: linear-gradient(135deg, rgba(241, 245, 249, 0.15), rgba(226, 232, 240, 0.15));
+    color: #94A3B8;
+    border: 1px solid rgba(226, 232, 240, 0.3);
+}
+
+/* Garantir que textos fiquem legíveis no modo escuro */
+.dark-theme .stat-card-title,
+.dark-theme .stat-card-description,
+.dark-theme .form-grid label,
+.dark-theme .contagem-title-section .back-link,
+.dark-theme .table-professional tbody td,
+.dark-theme .table-contagem tbody td,
+.dark-theme .table-contagem tbody td small {
+    color: var(--text-dark) !important;
+}
+
+/* Ajustar sombras e brilhos para modo escuro */
+.dark-theme .main-content-container,
+.dark-theme .stat-card,
+.dark-theme .new-inventory-form-container,
+.dark-theme .contagem-toolbar {
+    box-shadow: var(--card-shadow-dark);
+}
+
+.dark-theme .btn-primary-gradient:hover,
+.dark-theme .btn-primary:hover {
+    box-shadow: 0 12px 40px rgba(0, 68, 128, 0.4);
+}
+
+/* ======================================================== */
+/* --- ESTILOS DO MODAL DE CONFIRMAÇÃO (A PEÇA FALTANTE) --- */
+/* ======================================================== */
+
+.modal {
+    display: none; /* Escondido por padrão */
+    position: fixed;
+    z-index: 1050; /* Garante que fique na frente de tudo */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(33, 37, 41, 0.6); /* Fundo escuro semi-transparente */
+    justify-content: center;
+    align-items: center;
+    -webkit-backdrop-filter: blur(3px); /* Efeito de desfoque para navegadores compatíveis */
+    backdrop-filter: blur(3px);
+}
+
+.modal-content {
+    background-color: var(--inv-container-bg, #fff);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 500px; /* Largura máxima padrão */
+    border: 1px solid var(--inv-border-color, #eef2f7);
+    animation: slide-down 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.modal-content.small {
+    max-width: 420px; /* Largura para modais de confirmação simples */
+}
+
+.modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid var(--inv-border-color, #eef2f7);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--inv-text-dark, #212529);
+}
+
+.modal-header .close-button {
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: #adb5bd;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.modal-header .close-button:hover {
+    color: var(--inv-danger, #dc3545);
+}
+
+.modal-body {
+    padding: 25px;
+    line-height: 1.6;
+    color: var(--inv-text-light, #6c757d);
+}
+
+.modal-footer {
+    padding: 15px 25px;
+    background-color: #f8f9fa;
+    border-top: 1px solid var(--inv-border-color, #eef2f7);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Animação de entrada do modal */
+@keyframes slide-down {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

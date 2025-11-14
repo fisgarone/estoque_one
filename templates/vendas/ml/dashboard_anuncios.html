@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Mercado Livre{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/dashboard_anuncios.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="ml-dashboard">
+    <!-- Header com ações rápidas -->
+    <div class="dashboard-header">
+        <div class="header-info">
+            <h1><i class="ri-store-2-line"></i> Dashboard Mercado Livre</h1>
+            <p>Gerencie seus anúncios</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="novoAnuncioIA()">
+                <i class="ri-add-line"></i> Novo Anúncio
+            </button>
+            <button class="btn-secondary" onclick="sincronizarML()">
+                <i class="ri-refresh-line"></i> Sincronizar
+            </button>
+            <button class="btn-outline" onclick="exportarRelatorio()">
+                <i class="ri-download-line"></i> Exportar
+            </button>
+        </div>
+    </div>
+
+    <!-- Cards de estatísticas -->
+    <div class="stats-grid">
+        <div class="stat-card primary">
+            <div class="stat-icon"><i class="ri-store-line"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_anuncios }}</h3>
+                <p>Total de Anúncios</p>
+                {% if stats.trend_total_anuncios is defined %}
+                <span class="stat-trend {{ 'positive' if stats.trend_total_anuncios >= 0 else 'negative' }}">
+                    {{ '{:+.1f}%'.format(stats.trend_total_anuncios) }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card success">
+            <div class="stat-icon"><i class="ri-play-circle-line"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.anuncios_ativos }}</h3>
+                <p>Anúncios Ativos</p>
+                {% if stats.total_anuncios and stats.total_anuncios > 0 %}
+                <span class="stat-trend positive">
+                    {{ "%.1f"|format((stats.anuncios_ativos / stats.total_anuncios * 100)) }}% ativo
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card warning">
+            <div class="stat-icon"><i class="ri-shopping-cart-line"></i></div>
+            <div class="stat-content">
+                <h3>{{ stats.total_vendido }}</h3>
+                <p>Itens Vendidos</p>
+                {% if stats.trend_vendidos is defined %}
+                <span class="stat-trend {{ 'positive' if stats.trend_vendidos >= 0 else 'negative' }}">
+                    {{ '{:+.1f}%'.format(stats.trend_vendidos) }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card accent">
+            <div class="stat-icon"><i class="ri-money-dollar-circle-line"></i></div>
+            <div class="stat-content">
+                <h3>R$ {{ "%.2f"|format(stats.receita_total or 0) }}</h3>
+                <p>Receita Total</p>
+                {% if stats.trend_receita is defined %}
+                <span class="stat-trend {{ 'positive' if stats.trend_receita >= 0 else 'negative' }}">
+                    {{ '{:+.1f}%'.format(stats.trend_receita) }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos e análises -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="ri-bar-chart-line"></i> Vendas por Categoria</h3>
+                <div class="chart-actions">
+                    <button onclick="atualizarGrafico('categorias')"><i class="ri-refresh-line"></i></button>
+                    <button onclick="exportarGrafico('categorias')"><i class="ri-download-line"></i></button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="categoriasChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="ri-pie-chart-line"></i> Status dos Anúncios</h3>
+                <div class="chart-actions">
+                    <button onclick="atualizarGrafico('status')"><i class="ri-refresh-line"></i></button>
+                    <button onclick="exportarGrafico('status')"><i class="ri-download-line"></i></button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card full-width">
+            <div class="chart-header">
+                <h3><i class="ri-line-chart-line"></i> Performance de Vendas</h3>
+                <div class="chart-filters">
+                    <select id="periodoFilter" onchange="atualizarPerformance()">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="30" selected>Últimos 30 dias</option>
+                        <option value="90">Últimos 90 dias</option>
+                    </select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de anúncios recentes -->
+    <div class="recent-ads-section">
+        <div class="section-header">
+            <h3><i class="ri-list-check-2"></i> Anúncios Recentes</h3>
+            <div class="section-actions">
+                <div class="search-box">
+                    <i class="ri-search-line"></i>
+                    <input type="text" placeholder="Buscar anúncios..." id="searchInput" onkeyup="filtrarAnuncios()">
+                </div>
+                <button class="btn-outline" onclick="verTodosAnuncios()">Ver Todos</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="ads-table" id="adsTable">
+                <thead>
+                    <tr>
+                        <th>Imagem</th>
+                        <th>Título</th>
+                        <th>Categoria</th>
+                        <th>Preço</th>
+                        <th>Status</th>
+                        <th>Vendidos</th>
+                        <th>Atualizado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="adsTableBody">
+                    <!-- Dados carregados via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Insights da IA (somente se tiver IA ativa; por padrão, escondemos no CSS/JS se não houver) -->
+    <div class="ai-insights-section" id="aiInsights" style="display:none;">
+        <div class="section-header">
+            <h3><i class="ri-brain-line"></i> Insights da IA</h3>
+            <button class="btn-primary" onclick="gerarInsights()">
+                <i class="ri-refresh-line"></i> Atualizar Insights
+            </button>
+        </div>
+        <div class="insights-grid" id="insightsGrid"></div>
+    </div>
+</div>
+
+<!-- Modal para ações rápidas -->
+<div id="quickActionModal" class="modal-premium" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 id="quickActionTitle">Ação Rápida</h2>
+            <button class="modal-close" onclick="fecharQuickAction()">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="quickActionContent"></div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="fecharQuickAction()">Cancelar</button>
+            <button class="btn-primary" id="quickActionConfirm">Confirmar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/vendas/ml/dashboard_anuncios.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Processar Entradas (Manual){% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nfe/importador.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="card-modern">
+        <h1>Processar Entradas</h1>
+        <p class="hint">
+            Documento: <strong>{{ doc }}</strong><br>
+            Informe os fatores e confirme cada item para calcular o custo por unidade (com IPI) e gravar a regra para próximas compras.
+        </p>
+
+        <div style="overflow-x: auto;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>SKU</th>
+                        <th>Nome</th>
+                        <th>Un. Compra</th>
+                        <th>Qtd Compra</th>
+                        <th>Vlr Unit</th>
+                        <th>IPI %</th>
+                        <th>IPI Vlr</th>
+                        <th>Fator 1<br><small>Pacotes por Caixa/Fardo</small></th>
+                        <th>Fator 2<br><small>Unidades por Pacote</small></th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in itens %}
+                    <tr>
+                        <td>{{ it.id }}</td>
+                        <td><strong>{{ it.produto_sku }}</strong></td>
+                        <td class="w300">{{ it.produto_nome }}</td>
+                        <td>{{ it.unidade_compra }}</td>
+                        <td>{{ "%.4f"|format(it.quantidade_compra or 0) }}</td>
+                        <td>R$ {{ "%.4f"|format(it.valor_unitario_compra or 0) }}</td>
+                        <td>{{ "%.2f"|format((it.ipi_percentual or 0)) }}%</td>
+                        <td>R$ {{ "%.2f"|format((it.valor_ipi or 0)) }}</td>
+                        <td>
+                            <form method="post" action="/estoque/processar-entradas/{{ it.id }}/confirmar"
+                                  class="inline-form" onsubmit="return validateFactors(this)">
+                                <input class="num" name="fator1" value="1" min="1" step="0.001" required />
+                        </td>
+                        <td>
+                                <input class="num" name="fator2" value="1" min="1" step="0.001" required />
+                        </td>
+                        <td>
+                                <button type="submit" class="btn-primary btn-sm">
+                                    <i class="ri-check-line"></i>
+                                    <span>Confirmar</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if itens|length == 0 %}
+                    <tr>
+                        <td colspan="11" class="empty">
+                            <i class="ri-check-double-line" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                            <div>Nenhum item pendente para este documento.</div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <a class="btn-ghost" href="{{ url_for('importador.upload') }}">
+                <i class="ri-arrow-left-line"></i>
+                <span>Nova Importação</span>
+            </a>
+            <a class="btn-primary" href="#">
+                <i class="ri-dashboard-line"></i>
+                <span>Ver Todos os Documentos</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/nfe/importador.js') }}"></script>
+<script>
+    function validateFactors(form) {
+        const fator1 = parseFloat(form.fator1.value);
+        const fator2 = parseFloat(form.fator2.value);
+
+        if (fator1 <= 0 || fator2 <= 0) {
+            showNotification('Os fatores devem ser maiores que zero', 'error');
+            return false;
+        }
+
+        showNotification('Processando item...', 'info');
+        return true;
+    }
+
+    // Add input validation for factor fields
+    document.addEventListener('DOMContentLoaded', function() {
+        const factorInputs = document.querySelectorAll('.num');
+        factorInputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (isNaN(value) || value <= 0) {
+                    this.style.borderColor = 'var(--error-color)';
+                    showNotification('Fator deve ser um número maior que zero', 'error');
+                } else {
+                    this.style.borderColor = 'var(--success-color)';
+                    setTimeout(() => {
+                        this.style.borderColor = '';
+                    }, 1000);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

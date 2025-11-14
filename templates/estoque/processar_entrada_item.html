@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Conversão de Compra → Estoque{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/inventario.css', v='6.0') }}">
+{% endblock %}
+
+{% block content %}
+{# Compat: se a rota passar 'item'/'produto', mapeia para os nomes usados no template #}
+{% if item_nf is not defined and item is defined %}{% set item_nf = item %}{% endif %}
+{% if produto_estoque is not defined and produto is defined %}{% set produto_estoque = produto %}{% endif %}
+
+<div class="page-container inventario-page">
+  <div class="main-content-container">
+    <div class="page-header">
+      <h1 class="page-title">Conversão de Compra → Estoque</h1>
+      <a href="{{ url_for('estoque.processar_entradas_lista') }}" class="btn btn-secondary">Voltar</a>
+    </div>
+
+    <!-- Contexto (NF-e / Produto) -->
+    <div class="stat-card">
+      <div class="stat-card-title">Produto no Estoque</div>
+      {% if produto_estoque and produto_estoque.id %}
+        <div class="stat-card-value">{{ produto_estoque.nome }}</div>
+        <div class="stat-card-description">
+          SKU: <strong>{{ produto_estoque.sku }}</strong><br>
+          Unidade de venda: <strong>{{ produto_estoque.unidade_medida_venda }}</strong>
+        </div>
+      {% else %}
+        <div class="stat-card-value">Produto novo</div>
+        <div class="stat-card-description">
+          <strong>Ao confirmar, o produto será criado automaticamente</strong> (tabela <code>produto</code>) e a entrada será lançada.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Calculadora de fracionamento -->
+    <form method="post" action="{{ url_for('estoque.confirmar_entrada', item_id=item_nf.id) }}" id="form-conversao">
+      <input type="hidden" name="item_nf_id" value="{{ item_nf.id }}">
+      {% if produto_estoque and produto_estoque.id %}
+        <input type="hidden" name="produto_id" value="{{ produto_estoque.id }}">
+      {% endif %}
+      <input type="hidden" name="fator_conversao_calculado" id="fator_conversao_calculado">
+      <input type="hidden" name="fator1" id="hid_f1">
+      <input type="hidden" name="fator2" id="hid_f2">
+
+      <div class="new-inventory-form-body" style="margin-top:20px;">
+        <div class="form-grid">
+          <label>Unidade de compra</label>
+          <div><strong>{{ item_nf.unidade_compra }}</strong></div>
+
+          <label>Qtd no documento</label>
+          <div><input class="form-control" id="qtd_compra" value="{{ item_nf.quantidade_compra|int }}" readonly></div>
+
+          <label>Decomposição Nível 1</label>
+          <div><input class="form-control" id="nivel1" type="number" min="1" placeholder="Ex.: pacotes por {{ item_nf.unidade_compra }}"></div>
+
+          <label>Decomposição Nível 2</label>
+          <div><input class="form-control" id="nivel2" type="number" min="1" placeholder="Ex.: unidades por pacote"></div>
+        </div>
+      </div>
+
+      <!-- Resultados -->
+      <div class="stats-grid" style="margin-top:15px;">
+        <div class="stat-card">
+          <div class="stat-card-title">Fator total</div>
+          <div class="stat-card-value" id="out_fator">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-title">Quantidade a entrar</div>
+          <div class="stat-card-value" id="out_qtd">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-title">Custo unitário</div>
+          <div class="stat-card-value" id="out_custo">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="new-inventory-form-footer">
+        <label style="margin-right:auto;">
+          <input type="checkbox" name="salvar_regra" value="on">
+          Salvar esta regra de cálculo
+        </label>
+        <button type="submit" class="btn btn-primary">Confirmar entrada</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  // Valor total robusto (usa a coluna disponível)
+  const valorTotalCalc = {{ (
+    (item_nf.valor_total_compra
+      if item_nf.valor_total_compra is not none
+      else (
+        item_nf.valor_total_item
+        if item_nf.valor_total_item is not none
+        else ((item_nf.quantidade_compra or 0) * (item_nf.valor_unitario_compra or 0) + (item_nf.ipi_valor or 0))
+      )
+    ) | float ) | round(4)
+  }};
+  const qtdCompra = parseFloat('{{ item_nf.quantidade_compra|float }}') || 0;
+  const valorTotal = valorTotalCalc;
+  const unVenda = `{% if produto_estoque and produto_estoque.id %}{{ produto_estoque.unidade_medida_venda }}{% else %}UN{% endif %}`;
+
+  const n1 = document.getElementById('nivel1');
+  const n2 = document.getElementById('nivel2');
+  const outFator = document.getElementById('out_fator');
+  const outQtd = document.getElementById('out_qtd');
+  const outCusto = document.getElementById('out_custo');
+  const hidFator = document.getElementById('fator_conversao_calculado');
+  const hidF1 = document.getElementById('hid_f1');
+  const hidF2 = document.getElementById('hid_f2');
+  const form = document.getElementById('form-conversao');
+
+  const brl = new Intl.NumberFormat('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+  function recalc() {
+    const f1 = Math.max(1, Math.floor(parseFloat(n1.value) || 1));
+    const f2 = Math.max(1, Math.floor(parseFloat(n2.value) || 1));
+    const fator = Math.max(1, Math.floor(f1 * f2));
+    const qtd = Math.floor(qtdCompra * fator);
+    const custo = qtd > 0 ? (valorTotal / qtd) : 0;
+
+    outFator.textContent = fator;
+    outQtd.textContent = `${qtd} ${unVenda}`;
+    outCusto.textContent = `R$ ${brl.format(custo)}`;
+    hidFator.value = fator;
+    hidF1.value = f1;
+    hidF2.value = f2;
+  }
+
+  n1.addEventListener('input', recalc);
+  n2.addEventListener('input', recalc);
+  recalc();
+
+  form.addEventListener('submit', () => {
+    if (!hidFator.value) recalc();
+  });
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,1275 @@
+{% extends "base.html" %}
+{% block title %}Vendas Mercado Livre — Visão Total{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/dashboard_advanced.css') }}">
+<!-- Adicionar após os estilos existentes -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/contrast-fixes.css') }}">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="ml-page">
+
+    <!-- ===================================================================
+         HEADER - Logo e Título Principal
+         =================================================================== -->
+    <div id="ml-header" class="card ml-header">
+        <div class="ml-title-wrap">
+            <a class="ml-brand" href="https://www.mercadolivre.com.br" target="_blank" rel="noopener">
+                <img src="{{ url_for('static', filename='images/ml_logo.png') }}" alt="Logo Mercado Livre">
+            </a>
+            <h1 class="ml-title">Vendas Mercado Livre — Visão Total</h1>
+        </div>
+    </div>
+
+    <!-- ===================================================================
+         COMPONENTE DE SINCRONIZAÇÃO
+         =================================================================== -->
+    <div class="sync-component card">
+        <div class="card-header">
+            <h3>
+                <i class="ri-refresh-line"></i>
+                Sincronização Mercado Livre
+            </h3>
+            <div class="sync-actions">
+                <button id="btn-sync-now" class="btn primary">
+                    <i class="ri-play-circle-line"></i>
+                    Sincronizar Agora
+                </button>
+                <button id="btn-sync-status" class="btn outline">
+                    <i class="ri-information-line"></i>
+                    Status
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Status Atual -->
+            <div class="sync-status-grid">
+                <div class="status-item">
+                    <div class="status-label">Última Sincronização</div>
+                    <div class="status-value" id="last-sync-time">—</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Status</div>
+                    <div class="status-badge" id="sync-status-badge">
+                        <span class="badge idle">OCIOSO</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Contas Ativas</div>
+                    <div class="status-value" id="active-accounts">—</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Próxima Sinc.</div>
+                    <div class="status-value" id="next-sync">—</div>
+                </div>
+            </div>
+
+            <!-- Progresso Atual -->
+            <div id="sync-progress" class="sync-progress" style="display: none;">
+                <div class="progress-header">
+                    <span id="progress-operation">Sincronizando...</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Estatísticas da Última Sincronização -->
+            <div id="last-stats" class="sync-stats" style="display: none;">
+                <h4>Última Sincronização</h4>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-new-orders">0</div>
+                        <div class="stat-label">Novos Pedidos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-updated-orders">0</div>
+                        <div class="stat-label">Pedidos Atualizados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total-orders">0</div>
+                        <div class="stat-label">Total Processado</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-duration">0s</div>
+                        <div class="stat-label">Duração</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações Rápidas -->
+            <div class="sync-settings">
+                <h4>Configurações de Sincronização</h4>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label for="sync-days-back">Dias para Buscar:</label>
+                        <select id="sync-days-back">
+                            <option value="7">7 dias</option>
+                            <option value="30" selected>30 dias</option>
+                            <option value="60">60 dias</option>
+                            <option value="90">90 dias</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="sync-force-refresh">
+                            Forçar atualização completa
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================
+         TOOLBAR - Filtros e Controles
+         =================================================================== -->
+    <form id="ml-filters" class="ml-toolbar card" autocomplete="off" onsubmit="return false" novalidate>
+        <div class="ml-toolbar-row">
+            <div class="field">
+                <label for="f-conta">Conta</label>
+                <select id="f-conta" name="conta">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="f-status">Status</label>
+                <select id="f-status" name="status">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="f-start">Data Inicial</label>
+                <input type="date" id="f-start" name="start" inputmode="numeric">
+            </div>
+
+            <div class="field">
+                <label for="f-end">Data Final</label>
+                <input type="date" id="f-end" name="end" inputmode="numeric">
+            </div>
+
+            <div class="field grow">
+                <label for="f-q">Busca Global</label>
+                <input type="search" id="f-q" name="q" placeholder="Pedido, SKU, MLB, título..." spellcheck="false"
+                       aria-label="Buscar por pedido, SKU, MLB ou título">
+            </div>
+
+            <div class="field">
+                <button type="button" id="btn-aplicar" class="btn primary">
+                    <i class="ri-search-line"></i>
+                    Aplicar
+                </button>
+            </div>
+
+            <div class="field">
+                <button type="button" id="btn-export-csv" class="btn primary outline">
+                    <i class="ri-file-text-line"></i>
+                    CSV
+                </button>
+            </div>
+
+            <div class="field">
+                <button type="button" id="btn-export-xlsx" class="btn primary">
+                    <i class="ri-file-excel-line"></i>
+                    Excel
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- ===================================================================
+         VENDAS DIÁRIAS - Cards Dinâmicos com Comparativo
+         =================================================================== -->
+    <section id="ml-daily" class="card">
+        <div class="card-header">
+            <h3>
+                <i class="ri-calendar-line"></i>
+                Vendas Diárias
+            </h3>
+            <div class="tabset" id="mini-tabs">
+                <button class="tab active" data-metric="bruto" type="button">
+                    <i class="ri-money-dollar-circle-line"></i>
+                    Valor (R$)
+                </button>
+                <button class="tab" data-metric="unidades" type="button">
+                    <i class="ri-shopping-cart-line"></i>
+                    Unidades
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="mini-cards-wrap">
+                <div class="mini-cards-row" id="mini-cards">
+                    <!-- Cards diários serão inseridos aqui via JavaScript -->
+                </div>
+            </div>
+            <div class="mini-legend"
+                 style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; font-size: 0.8rem; color: var(--ml-muted);">
+        <span style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="width: 12px; height: 12px; background: var(--ml-amarelo); border-radius: 2px;"></div>
+          Performance abaixo
+        </span>
+                <span style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="width: 12px; height: 12px; background: var(--ml-muted); border-radius: 2px;"></div>
+          Performance igual
+        </span>
+                <span style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="width: 12px; height: 12px; background: var(--ml-celeste); border-radius: 2px;"></div>
+          Performance acima
+        </span>
+                <span style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="width: 12px; height: 12px; background: var(--ml-celeste); border-radius: 2px; box-shadow: 0 0 8px var(--ml-celeste);"></div>
+          Hoje
+        </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================
+         KPIs - Indicadores Principais
+         =================================================================== -->
+    <section id="ml-kpis" class="ml-kpis">
+        <div class="kpi card clickable" data-modal="modal-bruto">
+            <div class="kpi-label">
+                <i class="ri-money-dollar-circle-line"></i>
+                Faturamento Bruto
+            </div>
+            <div class="kpi-value" id="kpi-bruto">—</div>
+            <div class="kpi-sub">Pedidos: <span id="kpi-pedidos">—</span></div>
+        </div>
+
+        <div class="kpi card clickable" data-modal="modal-repasse">
+            <div class="kpi-label">
+                <i class="ri-bank-line"></i>
+                Repasse Real
+            </div>
+            <div class="kpi-value" id="kpi-repasse">—</div>
+            <div class="kpi-sub">Taxas + Frete: <span id="kpi-taxas">—</span></div>
+        </div>
+
+        <div class="kpi card clickable" data-modal="modal-lucro">
+            <div class="kpi-label">
+                <i class="ri-line-chart-line"></i>
+                Lucro Real
+            </div>
+            <div class="kpi-value" id="kpi-lucro">—</div>
+            <div class="kpi-sub">Margem Média: <span id="kpi-lucro-pct">—</span></div>
+        </div>
+
+        <div class="kpi card clickable danger" data-modal="modal-div">
+            <div class="kpi-label">
+                <i class="ri-error-warning-line"></i>
+                Divergências
+            </div>
+            <div class="kpi-value" id="kpi-div">—</div>
+            <div class="kpi-sub">Diferença > R$ 0,02</div>
+        </div>
+    </section>
+
+    <!-- ===================================================================
+         GRÁFICOS - Tendência e Comparativos
+         =================================================================== -->
+    <section id="ml-grid" class="ml-grid">
+
+        <!-- Gráfico de Tendência (linha inteira) -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="ri-line-chart-line"></i>
+                    Tendência Temporal
+                </h3>
+                <div class="chart-info" style="font-size: 0.8rem; color: var(--ml-muted);">
+                    Evolução diária de Bruto, Repasse e Lucro
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="chart-trend"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid para gráficos lado a lado -->
+        <div class="ml-charts-row">
+
+            <!-- Top 10 SKUs (lado esquerdo) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        <i class="ri-bar-chart-horizontal-line"></i>
+                        Top 10 SKUs por Lucro
+                    </h3>
+                    <div class="chart-info" style="font-size: 0.8rem; color: var(--ml-muted);">
+                        Comparativo com período anterior
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-half">
+                        <canvas id="chart-top10"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribuição por Conta (lado direito) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        <i class="ri-pie-chart-line"></i>
+                        Distribuição por Conta
+                    </h3>
+                    <div class="chart-tabs" id="pie-tabs">
+                        <button class="chart-tab active" data-metric="vendas" type="button">
+                            <i class="ri-money-dollar-circle-line"></i>
+                            Valor (R$)
+                        </button>
+                        <button class="chart-tab" data-metric="unidades" type="button">
+                            <i class="ri-shopping-cart-line"></i>
+                            Unidades
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-half">
+                        <canvas id="chart-pie"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ===================================================================
+         PEDIDOS - Grid com Filtros Específicos
+         =================================================================== -->
+    <section id="ml-orders" class="card">
+        <div class="card-header">
+            <h3>
+                <i class="ri-shopping-bag-line"></i>
+                Pedidos Detalhados
+            </h3>
+            <div class="order-filters" style="display: flex; gap: 1rem; align-items: center;">
+                <div class="field" style="margin: 0;">
+                    <input type="text" id="f-sku" placeholder="Filtrar por SKU"
+                           style="padding: 0.5rem; border: 1px solid var(--ml-border); border-radius: 6px; background: var(--ml-dark); color: var(--ml-light); font-size: 0.8rem;">
+                </div>
+                <div class="field" style="margin: 0;">
+                    <input type="text" id="f-mlb" placeholder="Filtrar por MLB"
+                           style="padding: 0.5rem; border: 1px solid var(--ml-border); border-radius: 6px; background: var(--ml-dark); color: var(--ml-light); font-size: 0.8rem;">
+                </div>
+                <button id="btn-atualizar-pedidos" class="btn primary outline"
+                        style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+                    <i class="ri-refresh-line"></i>
+                    Atualizar
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="orders-grid">
+                <!-- Grid de pedidos será inserido aqui via JavaScript -->
+            </div>
+            <div class="pagination">
+                <button id="prev-page" class="btn primary outline">
+                    <i class="ri-arrow-left-line"></i>
+                    Anterior
+                </button>
+                <span id="page-info">Página 1 de 1</span>
+                <button id="next-page" class="btn primary outline">
+                    Próxima
+                    <i class="ri-arrow-right-line"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+    <!-- ===================================================================
+         ABC - Curva ABC de Anúncios (integrado ao dashboard principal)
+         =================================================================== -->
+    <section id="ml-abc" class="card" style="margin-top: 1rem;">
+        <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <i class="ri-bar-chart-2-line" style="font-size: 1.25rem; color: var(--ml-celeste);"></i>
+                <h2 class="card-title" style="margin:0;">Curva ABC de Anúncios</h2>
+            </div>
+            <div class="actions" style="display:flex; gap:0.5rem;">
+                <button class="btn primary outline" id="btn-export-abc-csv">
+                    <i class="ri-file-text-line"></i>
+                    ABC CSV
+                </button>
+                <button class="btn primary" id="btn-export-abc-xlsx">
+                    <i class="ri-file-excel-line"></i>
+                    ABC Excel
+                </button>
+            </div>
+        </div>
+
+        <div id="abc-empty" class="empty-state" style="display:none; padding:1rem; color:var(--ml-muted);">
+            Nenhum dado para o período/conta selecionado.
+        </div>
+
+        <div class="grid" style="display:grid; grid-template-columns: 1fr; gap: 1rem;">
+            <div class="card-body">
+                <canvas id="chart-abc" height="120"></canvas>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="tbl-abc" class="ml-table">
+                        <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>MLB</th>
+                            <th>Título</th>
+                            <th>Unidades</th>
+                            <th>Ticket Médio (R$)</th>
+                            <th>Faturamento (R$)</th>
+                            <th>Lucro (R$)</th>
+                            <th>Margem (%)</th>
+                            <th>Frete Seller (R$)</th>
+                            <th>Frete (%)</th>
+                            <th>% Acumulado</th>
+                            <th>Classe</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- ===================================================================
+     MODAIS - Detalhes dos KPIs
+     =================================================================== -->
+
+<!-- Modal Bruto -->
+<div id="modal-bruto" class="ml-modal" style="display: none;">
+    <div class="ml-modal-content">
+        <div class="ml-modal-header">
+            <h3>
+                <i class="ri-money-dollar-circle-line"></i>
+                Faturamento Bruto — Detalhes
+            </h3>
+            <button class="close" type="button">&times;</button>
+        </div>
+        <div class="ml-modal-body">
+            <p>O <strong>Faturamento Bruto</strong> representa o somatório do valor total das vendas (preço unitário ×
+                quantidade) no período filtrado, antes da dedução de qualquer taxa ou custo.</p>
+            <div style="background: rgba(0, 191, 255, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--ml-celeste);">Fórmula:</h4>
+                <code>Bruto = Σ (Preço Unitário × Quantidade)</code>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Repasse -->
+<div id="modal-repasse" class="ml-modal" style="display: none;">
+    <div class="ml-modal-content">
+        <div class="ml-modal-header">
+            <h3>
+                <i class="ri-bank-line"></i>
+                Repasse Real — Detalhes
+            </h3>
+            <button class="close" type="button">&times;</button>
+        </div>
+        <div class="ml-modal-body">
+            <p>O <strong>Repasse Real</strong> é o valor efetivamente recebido do Mercado Livre após todas as deduções
+                de taxas e tarifas.</p>
+            <div style="background: rgba(0, 191, 255, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--ml-celeste);">Componentes:</h4>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <li>Valor bruto da venda</li>
+                    <li>(-) Comissões do ML</li>
+                    <li>(-) Taxa fixa por transação</li>
+                    <li>(-) Custos de frete</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Lucro -->
+<div id="modal-lucro" class="ml-modal" style="display: none;">
+    <div class="ml-modal-content">
+        <div class="ml-modal-header">
+            <h3>
+                <i class="ri-line-chart-line"></i>
+                Lucro Real — Detalhes
+            </h3>
+            <button class="close" type="button">&times;</button>
+        </div>
+        <div class="ml-modal-body">
+            <p>O <strong>Lucro Real</strong> é o resultado final após deduzir todos os custos operacionais e fixos do
+                faturamento bruto.</p>
+            <div style="background: rgba(0, 191, 255, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--ml-celeste);">Fórmula Completa:</h4>
+                <code style="display: block; white-space: pre-line; font-size: 0.9rem;">
+                    Lucro Real = Bruto - (Comissões + Taxa Fixa + Custo Produto +
+                    Imposto + Frete Seller + 4% Operacional) - 13% Fixo
+                </code>
+            </div>
+            <div style="background: rgba(255, 230, 0, 0.1); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--ml-amarelo);">Parâmetros:</h4>
+                <ul style="margin: 0; padding-left: 1.5rem; font-size: 0.9rem;">
+                    <li><strong>4% Operacional:</strong> Custos operacionais variáveis</li>
+                    <li><strong>13% Fixo:</strong> Custos fixos da operação</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Divergências -->
+<div id="modal-div" class="ml-modal" style="display: none;">
+    <div class="ml-modal-content">
+        <div class="ml-modal-header">
+            <h3>
+                <i class="ri-error-warning-line"></i>
+                Divergências de Repasse
+            </h3>
+            <button class="close" type="button">&times;</button>
+        </div>
+        <div class="ml-modal-body">
+            <p>As <strong>Divergências</strong> são diferenças superiores a R$ 0,02 entre o repasse real recebido e o
+                repasse calculado pelo sistema.</p>
+            <div id="divergences-content">
+                <table class="table" id="tbl-divergences"
+                       style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                    <thead>
+                    <tr style="background: rgba(239, 68, 68, 0.1);">
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--ml-border);">
+                            Pedido
+                        </th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--ml-border);">
+                            Data
+                        </th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--ml-border);">
+                            Conta
+                        </th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--ml-border);">Rep.
+                            Real
+                        </th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--ml-border);">Rep.
+                            Calc.
+                        </th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--ml-border);">
+                            Diferença
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Dados serão inseridos via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="actions" style="margin-top: 1rem; text-align: center;">
+                <button class="btn danger" id="btn-export-div-csv">
+                    <i class="ri-file-text-line"></i>
+                    Exportar Divergências (CSV)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================================================================
+     MODAL AVANÇADO - Ações dos Pedidos
+     =================================================================== -->
+<div id="advanced-actions-modal" class="advanced-modal" style="display: none;">
+    <div class="advanced-modal-content">
+        <div class="advanced-modal-header">
+            <h3>
+                <i class="ri-tools-line"></i>
+                Ações para pedido <span class="order-id-placeholder"></span>
+            </h3>
+            <button class="close" type="button">&times;</button>
+        </div>
+        <div class="advanced-modal-body">
+            <p style="margin-bottom: 1.5rem; color: var(--ml-muted); font-size: 0.9rem;">
+                <i class="ri-calendar-line"></i>
+                Data: <span class="order-date-placeholder"></span>
+            </p>
+            <div class="action-grid"
+                 style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div class="action-btn" data-action="copy"
+                     style="display: flex; flex-direction: column; align-items: center; padding: 1.5rem; border: 2px solid var(--ml-border); border-radius: 12px; cursor: pointer; transition: var(--ml-transition);">
+                    <i class="ri-file-copy-line"
+                       style="font-size: 2rem; color: var(--ml-celeste); margin-bottom: 0.5rem;"></i>
+                    <span style="font-weight: 600;">Copiar ID</span>
+                </div>
+                <div class="action-btn" data-action="track"
+                     style="display: flex; flex-direction: column; align-items: center; padding: 1.5rem; border: 2px solid var(--ml-border); border-radius: 12px; cursor: pointer; transition: var(--ml-transition);">
+                    <i class="ri-truck-line"
+                       style="font-size: 2rem; color: var(--ml-celeste); margin-bottom: 0.5rem;"></i>
+                    <span style="font-weight: 600;">Rastrear</span>
+                </div>
+                <div class="action-btn" data-action="message"
+                     style="display: flex; flex-direction: column; align-items: center; padding: 1.5rem; border: 2px solid var(--ml-border); border-radius: 12px; cursor: pointer; transition: var(--ml-transition);">
+                    <i class="ri-message-2-line"
+                       style="font-size: 2rem; color: var(--ml-celeste); margin-bottom: 0.5rem;"></i>
+                    <span style="font-weight: 600;">Contatar</span>
+                </div>
+            </div>
+        </div>
+        <div class="advanced-modal-footer"
+             style="padding: 1.5rem; text-align: center; border-top: 1px solid var(--ml-border);">
+            <button class="btn primary outline" id="btn-close-advanced">
+                <i class="ri-close-line"></i>
+                Fechar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================================================================
+     ESTILOS ESPECÍFICOS PARA SINCRONIZAÇÃO
+     =================================================================== -->
+<style>
+    .sync-status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .status-item {
+        background: var(--ml-dark);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--ml-border);
+    }
+
+    .status-label {
+        font-size: 0.8rem;
+        color: var(--ml-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .status-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--ml-light);
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge.idle {
+        background: var(--ml-muted);
+        color: var(--ml-dark);
+    }
+
+    .badge.syncing {
+        background: var(--ml-amarelo);
+        color: var(--ml-dark);
+    }
+
+    .badge.success {
+        background: var(--ml-success);
+        color: white;
+    }
+
+    .badge.error {
+        background: var(--ml-error);
+        color: white;
+    }
+
+    .sync-progress {
+        margin: 1.5rem 0;
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: var(--ml-dark);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--ml-celeste), var(--ml-amarelo));
+        transition: width 0.3s ease;
+        border-radius: 4px;
+    }
+
+    .sync-stats {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: var(--ml-dark);
+        border-radius: 8px;
+        border: 1px solid var(--ml-border);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .stat-card {
+        text-align: center;
+        padding: 1rem;
+        background: rgba(0, 191, 255, 0.1);
+        border-radius: 8px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--ml-celeste);
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--ml-muted);
+        margin-top: 0.5rem;
+    }
+
+    .sync-settings {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--ml-border);
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .setting-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .setting-item label {
+        font-size: 0.9rem;
+        color: var(--ml-light);
+    }
+
+    .setting-item select,
+    .setting-item input[type="checkbox"] {
+        padding: 0.5rem;
+        border: 1px solid var(--ml-border);
+        border-radius: 6px;
+        background: var(--ml-card);
+        color: var(--ml-light);
+    }
+
+    .sync-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* ===================================================================
+       ESTILOS EXISTENTES PARA MODAIS
+       =================================================================== */
+    .ml-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+    }
+
+    .ml-modal-content {
+        background-color: var(--ml-card);
+        margin: 5% auto;
+        border: 1px solid var(--ml-border);
+        border-radius: 16px;
+        width: 90%;
+        max-width: 800px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ml-modal-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, var(--ml-celeste), var(--ml-celeste-dark));
+        color: white;
+        border-radius: 16px 16px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ml-modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .ml-modal-body {
+        padding: 2rem;
+        color: var(--ml-light);
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: var(--ml-transition);
+    }
+
+    .close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: rotate(90deg);
+    }
+
+    .advanced-modal {
+        display: none;
+        position: fixed;
+        z-index: 1100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+    }
+
+    .advanced-modal-content {
+        background-color: var(--ml-card);
+        margin: 3% auto;
+        border: 2px solid var(--ml-celeste);
+        border-radius: 20px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: var(--ml-glow);
+        animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .advanced-modal-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, var(--ml-celeste), var(--ml-amarelo));
+        color: var(--ml-dark);
+        border-radius: 18px 18px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .advanced-modal-body {
+        padding: 2rem;
+        color: var(--ml-light);
+    }
+
+    .action-btn:hover {
+        border-color: var(--ml-celeste);
+        background: rgba(0, 191, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--ml-border);
+    }
+
+    .table th {
+        background: rgba(0, 191, 255, 0.1);
+        font-weight: 600;
+        color: var(--ml-celeste);
+    }
+
+    .table tbody tr:hover {
+        background: rgba(0, 191, 255, 0.05);
+    }
+
+    /* Responsividade para modais */
+    @media (max-width: 768px) {
+        .ml-modal-content,
+        .advanced-modal-content {
+            width: 95%;
+            margin: 2% auto;
+        }
+
+        .ml-modal-body,
+        .advanced-modal-body {
+            padding: 1rem;
+        }
+
+        .action-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .sync-status-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .sync-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/vendas/ml/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vendas/ml/ai_analytics.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vendas/ml/abc.js') }}?v=3"></script>
+
+
+<script>
+    // ===================================================================
+    // COMPONENTE DE SINCRONIZAÇÃO - JavaScript
+    // ===================================================================
+    class MLSyncComponent {
+        constructor() {
+            this.pollingInterval = null;
+            this.isSyncing = false;
+            this.init();
+        }
+
+        init() {
+            this.bindEvents();
+            this.loadStatus();
+            this.startPolling();
+        }
+
+        bindEvents() {
+            // Sincronização manual
+            const syncBtn = document.getElementById('btn-sync-now');
+            if (syncBtn) {
+                syncBtn.addEventListener('click', () => {
+                    this.syncNow();
+                });
+            }
+
+            // Botão de status
+            const statusBtn = document.getElementById('btn-sync-status');
+            if (statusBtn) {
+                statusBtn.addEventListener('click', () => {
+                    this.loadStatus(true);
+                });
+            }
+        }
+
+        async loadStatus(force = false) {
+            try {
+                const response = await fetch('/vendas/ml/api/sync/status');
+                if (!response.ok) throw new Error('Falha ao carregar status');
+
+                const data = await response.json();
+                this.updateUI(data);
+            } catch (error) {
+                console.error('Erro ao carregar status:', error);
+                this.showError('Falha ao carregar status da sincronização');
+            }
+        }
+
+        updateUI(data) {
+            const {service_status, sync_status} = data;
+
+            // Status básico
+            const lastSyncEl = document.getElementById('last-sync-time');
+            const activeAccountsEl = document.getElementById('active-accounts');
+
+            if (lastSyncEl) {
+                lastSyncEl.textContent =
+                    sync_status.last_sync ? new Date(sync_status.last_sync).toLocaleString() : '—';
+            }
+
+            if (activeAccountsEl) {
+                activeAccountsEl.textContent =
+                    `${service_status.total_accounts} contas`;
+            }
+
+            // Status badge
+            const statusBadge = document.getElementById('sync-status-badge');
+            if (statusBadge) {
+                if (sync_status.is_syncing) {
+                    statusBadge.innerHTML = '<span class="badge syncing">SINCRONIZANDO</span>';
+                    this.showProgress(sync_status.current_operation);
+                } else {
+                    statusBadge.innerHTML = '<span class="badge idle">OCIOSO</span>';
+                    this.hideProgress();
+                }
+            }
+
+            // Estatísticas da última sincronização
+            if (sync_status.last_stats) {
+                this.showLastStats(sync_status.last_stats);
+            }
+        }
+
+        showProgress(operation) {
+            const progressEl = document.getElementById('sync-progress');
+            const operationEl = document.getElementById('progress-operation');
+
+            if (progressEl) {
+                progressEl.style.display = 'block';
+            }
+            if (operationEl) {
+                operationEl.textContent = operation || 'Sincronizando...';
+            }
+            this.isSyncing = true;
+        }
+
+        hideProgress() {
+            const progressEl = document.getElementById('sync-progress');
+            if (progressEl) {
+                progressEl.style.display = 'none';
+            }
+            this.isSyncing = false;
+        }
+
+        showLastStats(stats) {
+            const statsEl = document.getElementById('last-stats');
+            if (!statsEl) return;
+
+            statsEl.style.display = 'block';
+
+            const newOrdersEl = document.getElementById('stat-new-orders');
+            const updatedOrdersEl = document.getElementById('stat-updated-orders');
+            const totalOrdersEl = document.getElementById('stat-total-orders');
+            const durationEl = document.getElementById('stat-duration');
+
+            if (newOrdersEl) newOrdersEl.textContent = stats.total_new_orders || 0;
+            if (updatedOrdersEl) updatedOrdersEl.textContent = stats.total_updated_orders || 0;
+            if (totalOrdersEl) {
+                totalOrdersEl.textContent =
+                    (stats.total_new_orders || 0) + (stats.total_updated_orders || 0);
+            }
+            if (durationEl) {
+                durationEl.textContent = `${Math.round(stats.duration || 0)}s`;
+            }
+        }
+
+        async syncNow() {
+            if (this.isSyncing) {
+                this.showError('Sincronização já em andamento!');
+                return;
+            }
+
+            const daysBackEl = document.getElementById('sync-days-back');
+            const forceRefreshEl = document.getElementById('sync-force-refresh');
+
+            const daysBack = daysBackEl ? parseInt(daysBackEl.value) : 30;
+            const forceRefresh = forceRefreshEl ? forceRefreshEl.checked : false;
+
+            try {
+                const response = await fetch('/vendas/ml/api/sync/now', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        days_back: daysBack,
+                        force_refresh: forceRefresh
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    this.showSuccess('Sincronização iniciada!');
+                    this.loadStatus(true);
+                } else {
+                    this.showError(result.error || 'Erro ao iniciar sincronização');
+                }
+            } catch (error) {
+                console.error('Erro na sincronização:', error);
+                this.showError('Falha na sincronização');
+            }
+        }
+
+        startPolling() {
+            // Atualiza status a cada 10 segundos quando sincronizando
+            this.pollingInterval = setInterval(() => {
+                if (this.isSyncing) {
+                    this.loadStatus();
+                }
+            }, 10000);
+        }
+
+        showSuccess(message) {
+            // Usar sistema de notificação existente ou fallback
+            if (typeof showNotification === 'function') {
+                showNotification(message, 'success');
+            } else {
+                alert(`✅ ${message}`);
+            }
+        }
+
+        showError(message) {
+            if (typeof showNotification === 'function') {
+                showNotification(message, 'error');
+            } else {
+                alert(`❌ ${message}`);
+            }
+        }
+
+        destroy() {
+            if (this.pollingInterval) {
+                clearInterval(this.pollingInterval);
+            }
+        }
+    }
+
+    // ===================================================================
+    // INICIALIZAÇÃO DO DASHBOARD
+    // ===================================================================
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Inicializando ML Dashboard com Sincronização...');
+
+        // Inicializar componente de sincronização
+        window.mlSyncComponent = new MLSyncComponent();
+
+        // Event listeners para KPIs clicáveis
+        document.querySelectorAll(".kpi.clickable").forEach(kpi => {
+            kpi.addEventListener("click", () => {
+                const modalId = kpi.dataset.modal;
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = "block";
+                }
+            });
+        });
+
+        // Event listeners para fechar modais
+        document.querySelectorAll(".ml-modal .close, .advanced-modal .close, #btn-close-advanced").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const modal = e.target.closest(".ml-modal, .advanced-modal");
+                if (modal) {
+                    modal.style.display = "none";
+                }
+            });
+        });
+
+        // Fechar modal ao clicar fora
+        window.addEventListener("click", (e) => {
+            if (e.target.matches(".ml-modal, .advanced-modal")) {
+                e.target.style.display = "none";
+            }
+        });
+
+        // Event listener para ações avançadas
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.action;
+                if (typeof window[action + 'OrderId'] === 'function' || typeof window[action + 'Order'] === 'function') {
+                    // As funções específicas estão definidas no JavaScript principal
+                }
+            });
+        });
+
+        // Event listener para atualizar pedidos com filtros específicos
+        const btnAtualizarPedidos = document.getElementById('btn-atualizar-pedidos');
+        if (btnAtualizarPedidos) {
+            btnAtualizarPedidos.addEventListener('click', () => {
+                if (typeof loadOrders === 'function') {
+                    loadOrders(1);
+                }
+            });
+        }
+
+        // Event listeners para filtros de pedidos (Enter)
+        const fSku = document.getElementById('f-sku');
+        const fMlb = document.getElementById('f-mlb');
+
+        if (fSku) {
+            fSku.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' && typeof loadOrders === 'function') {
+                    loadOrders(1);
+                }
+            });
+        }
+
+        if (fMlb) {
+            fMlb.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' && typeof loadOrders === 'function') {
+                    loadOrders(1);
+                }
+            });
+        }
+
+        console.log('Dashboard HTML inicializado com sucesso!');
+    });
+
+    // Função de fallback para notificações
+    if (typeof showNotification === 'undefined') {
+        window.showNotification = function (message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+            ${type === 'success' ? 'background: #10b981;' : 'background: #ef4444;'}
+        `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        };
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FisgarOne | {% block title %}{% endblock %}</title>
+
+  <!-- Fontes e Ícones -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+  <!-- Bibliotecas para gráficos e visualizações -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+  <!-- Animações -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+  <!-- =================================================================== -->
+  <!-- NOVAS BIBLIOTECAS PARA O DASHBOARD INTERATIVO (GridStack.js ) -->
+  <link href="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.3/dist/gridstack-all.js"></script>
+  <!-- =================================================================== -->
+
+  <style>
+    /* =================================================================== */
+    /* SISTEMA DE CORES CORPORATIVO FISGARONE ERP */
+    /* =================================================================== */
+    :root {
+      /* 🎯 CORES PRIMÁRIAS CORPORATIVAS */
+      --erp-primary: #1e40af;           /* Azul corporativo - confiança */
+      --erp-primary-dark: #1e3a8a;      /* Azul escuro */
+      --erp-primary-light: #3b82f6;     /* Azul claro */
+      --erp-secondary: #0f766e;         /* Verde executivo */
+      --erp-accent: #dc2626;            /* Vermelho ação */
+
+      /* 🎯 SISTEMA DE TONS NEUTROS PROFISSIONAIS - MODO CLARO */
+      --erp-dark: #1f2937;              /* Texto primário */
+      --erp-dark-muted: #374151;        /* Texto secundário */
+      --erp-light: #f8fafc;             /* Fundo claro */
+      --erp-light-muted: #f1f5f9;       /* Fundo cards claro */
+      --erp-border: #e5e7eb;            /* Bordas */
+      --erp-card: #ffffff;              /* Cards */
+      --erp-card-hover: #f8fafc;        /* Cards hover */
+
+      /* 🎯 ESTADOS SEMÂNTICOS (ALTO CONTRASTE) */
+      --erp-success: #059669;           /* Sucesso - verde vibrante */
+      --erp-warning: #d97706;           /* Alerta - laranja visível */
+      --erp-error: #dc2626;             /* Erro - vermelho urgente */
+      --erp-info: #2563eb;              /* Informação - azul claro */
+
+      /* 🎯 GRADIENTES CORPORATIVOS */
+      --gradient-primary: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      --gradient-success: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      --gradient-warning: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      --gradient-danger: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+
+      /* 🎯 EFEITOS VISUAIS */
+      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-card-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --glow-primary: 0 0 0 3px rgba(30, 64, 175, 0.1);
+      --glow-success: 0 0 0 3px rgba(5, 150, 105, 0.1);
+
+      /* 🎯 COMPONENTES */
+      --border-radius: 12px;
+      --border-radius-lg: 16px;
+      --border-radius-xl: 20px;
+      --transition-speed: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* MODO ESCURO CORPORATIVO */
+    .dark-theme {
+      --erp-dark: #0f172a;              /* Fundo escuro principal */
+      --erp-dark-muted: #1e293b;        /* Texto secundário escuro */
+      --erp-light: #f8fafc;             /* Texto claro */
+      --erp-light-muted: #cbd5e1;       /* Texto claro secundário */
+      --erp-border: #334155;            /* Bordas escuras */
+      --erp-card: #1e293b;              /* Cards escuros */
+      --erp-card-hover: #334155;        /* Cards hover escuros */
+    }
+
+    /* =================================================================== */
+    /* ESTILOS BASE COM NOVAS CORES CORPORATIVAS */
+    /* =================================================================== */
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Space Grotesk', sans-serif;
+      background-color: var(--erp-light);
+      color: var(--erp-dark);
+      transition: all var(--transition-speed) ease;
+      overflow-x: hidden;
+    }
+
+    .dark-theme {
+      background-color: var(--erp-dark);
+      color: var(--erp-light);
+    }
+
+    .sidebar-container {
+      width: 280px;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      background: var(--erp-card);
+      border-right: 2px solid var(--erp-border);
+      box-shadow: 5px 0 25px rgba(30, 64, 175, 0.1);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      transition: all var(--transition-speed) ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .dark-theme .sidebar-container {
+      background: var(--erp-card);
+      border-right: 2px solid var(--erp-border);
+      box-shadow: 5px 0 25px rgba(30, 64, 175, 0.2);
+    }
+
+    .sidebar-logo {
+      padding: 30px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--erp-border);
+      background: linear-gradient(to bottom, rgba(30, 64, 175, 0.05), rgba(255, 255, 255, 0.02));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sidebar-logo::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient( to bottom right, rgba(30, 64, 175, 0.1) 0%, rgba(30, 64, 175, 0) 20%, rgba(30, 64, 175, 0) 80%, rgba(30, 64, 175, 0.1) 100% );
+      transform: rotate(30deg);
+      animation: hologram 6s linear infinite;
+    }
+
+    @keyframes hologram {
+      0% { transform: rotate(30deg) translateX(-25%); }
+      100% { transform: rotate(30deg) translateX(25%); }
+    }
+
+    .dark-theme .sidebar-logo {
+      border-bottom: 1px solid var(--erp-border);
+      background: linear-gradient(to bottom, rgba(30, 64, 175, 0.1), rgba(15, 23, 42, 0.1));
+    }
+
+    .sidebar-logo img {
+      width: 140px;
+      height: 180px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 5px rgba(30, 64, 175, 0.3));
+      transition: all var(--transition-speed) ease;
+      position: relative;
+    }
+
+    .dark-theme .sidebar-logo img {
+      filter: drop-shadow(0 0 5px rgba(30, 64, 175, 0.5));
+    }
+
+    .sidebar-logo:hover img {
+      filter: drop-shadow(0 0 15px rgba(30, 64, 175, 0.5));
+      transform: scale(1.03);
+    }
+
+    .dark-theme .sidebar-logo:hover img {
+      filter: drop-shadow(0 0 15px rgba(30, 64, 175, 0.7));
+    }
+
+    #main-menu {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 15px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--erp-primary) transparent;
+    }
+
+    #main-menu::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #main-menu::-webkit-scrollbar-thumb {
+      background-color: var(--erp-primary);
+      border-radius: 3px;
+    }
+
+    .dark-theme #main-menu::-webkit-scrollbar-thumb {
+      background-color: var(--erp-primary-light);
+    }
+
+    .menu-group-title {
+      color: var(--erp-primary);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin: 30px 0 15px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--erp-border);
+      font-weight: 700;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .menu-group-title::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 40px;
+      height: 2px;
+      background: var(--erp-accent);
+      animation: scanline 2s linear infinite;
+    }
+
+    @keyframes scanline {
+      0% { width: 0; opacity: 0; }
+      50% { width: 40px; opacity: 1; }
+      100% { width: 0; opacity: 0; left: 40px; }
+    }
+
+    .dark-theme .menu-group-title {
+      color: var(--erp-primary-light);
+      border-bottom: 1px solid var(--erp-border);
+    }
+
+    .menu-item {
+      margin: 12px 0;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      transition: all var(--transition-speed) ease;
+      position: relative;
+      background: rgba(30, 64, 175, 0.03);
+    }
+
+    .menu-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient( 135deg, transparent 0%, transparent 45%, var(--erp-primary) 50%, transparent 55%, transparent 100% );
+      background-size: 300% 300%;
+      opacity: 0;
+      transition: all 0.5s ease;
+    }
+
+    .menu-item:hover::before {
+      opacity: 0.3;
+      background-position: 100% 100%;
+    }
+
+    .menu-link {
+      display: flex;
+      align-items: center;
+      padding: 15px 20px;
+      color: var(--erp-dark);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .dark-theme .menu-link {
+      color: var(--erp-light);
+    }
+
+    .menu-link:hover {
+      color: var(--erp-primary);
+      transform: translateX(5px);
+    }
+
+    .dark-theme .menu-link:hover {
+      color: var(--erp-primary-light);
+    }
+
+    .menu-link i {
+      font-size: 1.2rem;
+      margin-right: 15px;
+      width: 24px;
+      text-align: center;
+      color: var(--erp-primary);
+      transition: all var(--transition-speed) ease;
+    }
+
+    .dark-theme .menu-link i {
+      color: var(--erp-primary-light);
+    }
+
+    .menu-link:hover i {
+      color: var(--erp-primary);
+      transform: scale(1.2);
+    }
+
+    .dark-theme .menu-link:hover i {
+      color: var(--erp-primary-light);
+    }
+
+    .menu-link span {
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      position: relative;
+    }
+
+    .menu-link span::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--erp-primary);
+      transition: width var(--transition-speed) ease;
+    }
+
+    .menu-link:hover span::after {
+      width: 100%;
+    }
+
+    .dark-theme .menu-link span::after {
+      background: var(--erp-primary-light);
+    }
+
+    .submenu-list {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--transition-speed) ease;
+      background: rgba(30, 64, 175, 0.05);
+      border-left: 2px solid var(--erp-primary);
+      margin-left: 20px;
+      border-radius: 0 0 var(--border-radius) var(--border-radius);
+    }
+
+    .dark-theme .submenu-list {
+      background: rgba(30, 64, 175, 0.1);
+      border-left: 2px solid var(--erp-primary-light);
+    }
+
+    .menu-item.open .submenu-list {
+      max-height: 500px;
+    }
+
+    .submenu-list a {
+      display: block;
+      padding: 12px 20px 12px 60px;
+      color: var(--erp-dark-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all var(--transition-speed) ease;
+      position: relative;
+    }
+
+    .dark-theme .submenu-list a {
+      color: var(--erp-light-muted);
+    }
+
+    .submenu-list a:hover {
+      background: rgba(220, 38, 38, 0.1);
+      color: var(--erp-primary);
+      padding-left: 65px;
+    }
+
+    .dark-theme .submenu-list a:hover {
+      background: rgba(220, 38, 38, 0.1);
+      color: var(--erp-primary-light);
+    }
+
+    .submenu-list a::before {
+      content: '⯈';
+      position: absolute;
+      left: 35px;
+      color: var(--erp-primary);
+      transition: all var(--transition-speed) ease;
+    }
+
+    .dark-theme .submenu-list a::before {
+      color: var(--erp-primary-light);
+    }
+
+    .submenu-list a:hover::before {
+      color: var(--erp-accent);
+      transform: translateX(5px);
+    }
+
+    .dark-theme .submenu-list a:hover::before {
+      color: var(--erp-accent);
+    }
+
+    #theme-toggle {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      left: auto;
+      background: var(--gradient-primary);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-card-hover);
+      transition: all var(--transition-speed) ease;
+      z-index: 1100;
+      font-size: 1.2rem;
+    }
+
+    .dark-theme #theme-toggle {
+      background: var(--gradient-primary);
+      box-shadow: 0 0 20px rgba(30, 64, 175, 0.5);
+    }
+
+    #theme-toggle:hover {
+      transform: scale(1.1) rotate(30deg);
+      box-shadow: 0 0 25px rgba(30, 64, 175, 0.7);
+    }
+
+    .dark-theme #theme-toggle:hover {
+      box-shadow: 0 0 25px rgba(30, 64, 175, 0.8);
+    }
+
+    .main-content {
+      margin-left: 280px;
+      padding: 30px;
+      min-height: 100vh;
+      transition: margin-left var(--transition-speed) ease;
+      background-color: var(--erp-light);
+    }
+
+    .dark-theme .main-content {
+      background-color: var(--erp-dark);
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: var(--border-radius);
+      background: var(--erp-success);
+      color: white;
+      box-shadow: var(--shadow-card-hover);
+      z-index: 1200;
+      transform: translateX(150%);
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      display: flex;
+      align-items: center;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.error {
+      background: var(--erp-error);
+    }
+
+    .notification.warning {
+      background: var(--erp-warning);
+    }
+
+    .notification i {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+
+    .modal-premium {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1300;
+      backdrop-filter: blur(5px);
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 800px;
+      background: var(--erp-card);
+      border-radius: var(--border-radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card-hover);
+      animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dark-theme .modal-container {
+      background: var(--erp-card);
+    }
+
+    @keyframes slideUp {
+      from { transform: translate(-50%, 100%); opacity: 0; }
+      to { transform: translate(-50%, -50%); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 20px 25px;
+      background: var(--gradient-primary);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dark-theme .modal-header {
+      background: var(--gradient-primary);
+    }
+
+    .modal-header h2 {
+      font-size: 1.5rem;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.8rem;
+      cursor: pointer;
+      padding: 5px;
+      transition: transform 0.2s ease;
+    }
+
+    .modal-close:hover {
+      transform: rotate(90deg);
+    }
+
+    .modal-body {
+      padding: 30px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      background: rgba(0, 0, 0, 0.02);
+      border-top: 1px solid var(--erp-border);
+    }
+
+    .dark-theme .modal-footer {
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid var(--erp-border);
+    }
+
+    @media (max-width: 992px) {
+      .sidebar-container {
+        transform: translateX(-100%);
+        width: 280px;
+      }
+      .sidebar-container.open {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+      }
+      #mobile-menu-toggle {
+        display: block;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1100;
+        background: var(--erp-primary);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: var(--shadow-card-hover);
+      }
+      .dark-theme #mobile-menu-toggle {
+        background: var(--erp-primary);
+        box-shadow: 0 0 20px rgba(30, 64, 175, 0.5);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .modal-container {
+        width: 95%;
+        max-height: 85vh;
+      }
+      .modal-footer {
+        flex-direction: column;
+      }
+    }
+
+
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar-container" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="{{ url_for('static', filename='images/logofisgar.png') }}" alt="Logo FisgarOne" />
+    </div>
+    <div id="main-menu"></div>
+  </div>
+
+  <!-- Botão de Tema -->
+  <button id="theme-toggle" title="Alternar tema" style="bottom: 30px; right: 30px; left: auto;">
+    <i class="ri-contrast-2-fill"></i>
+  </button>
+
+  <!-- Botão Mobile Menu (oculto por padrão) -->
+  <button id="mobile-menu-toggle" style="display: none;">
+    <i class="ri-menu-line"></i>
+  </button>
+
+  <!-- Conteúdo Principal -->
+  <div class="main-content">
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Notificação -->
+  <div id="notification" class="notification">
+    <i class="ri-check-line"></i>
+    <span id="notification-message"></span>
+  </div>
+
+  <!-- Modal Premium -->
+  <div id="premiumModal" class="modal-premium">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="modalTitle">Detalhes</h2>
+        <button class="modal-close" onclick="fecharModalPremium()">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="modalContent">
+        <!-- Conteúdo será carregado dinamicamente -->
+      </div>
+      <div class="modal-footer">
+        <button class="modal-action-btn export" onclick="exportarDashboard()">
+          <i class="ri-download-line"></i>
+          <span>Exportar</span>
+        </button>
+        <button class="modal-action-btn compare" onclick="compararPeriodos()">
+          <i class="ri-bar-chart-line"></i>
+          <span>Comparar</span>
+        </button>
+        <button class="modal-action-btn details" onclick="verDetalhes()">
+          <i class="ri-eye-line"></i>
+          <span>Detalhes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts Base -->
+  <script>
+    // Funções de notificação e modal (já presentes no base.html, mas replicadas para consistência)
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const messageEl = document.getElementById('notification-message');
+
+        if (notification && messageEl) {
+            messageEl.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    }
+
+    function fecharModalPremium() {
+        document.getElementById('premiumModal').style.display = 'none';
+    }
+
+    function exportarDashboard() {
+        showNotification('Exportando dashboard...', 'info');
+        fecharModalPremium();
+    }
+
+    function compararPeriodos() {
+        showNotification('Comparando períodos...', 'info');
+        fecharModalPremium();
+    }
+
+    function verDetalhes() {
+        window.location.href = '/vendas/ml/relatorios'; // Exemplo de redirecionamento
+        fecharModalPremium();
+    }
+  </script>
+  <script src="{{ url_for('static', filename='js/main_menu.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

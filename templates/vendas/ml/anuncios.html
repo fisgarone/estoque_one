@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Anúncios{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/anuncios.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="anuncios-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-info">
+      <h1><i class="ri-list-check-2"></i> Gerenciar Anúncios</h1>
+      <p><span id="totalCount">{{ anuncios|length }}</span> anúncios encontrados</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="btnNovo"><i class="ri-add-line"></i> Novo Anúncio</button>
+      <button class="btn btn-secondary" id="btnImportar"><i class="ri-upload-line"></i> Importar</button>
+      <button class="btn btn-outline" id="btnAutomacoes"><i class="ri-robot-2-line"></i> Automações</button>
+    </div>
+  </div>
+
+  <!-- Filtros avançados -->
+  <section class="filters-section" id="filtersSection">
+    <button class="filters-toggle" type="button" id="btnToggleFilters">
+      <i class="ri-filter-line"></i><span>Filtros Avançados</span><i class="ri-arrow-down-s-line toggle-icon"></i>
+    </button>
+    <div class="filters-content" id="filtersContent">
+      <div class="filters-grid">
+
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="statusFilter">
+            <option value="">Todos</option>
+            <option value="active">Ativo</option>
+            <option value="paused">Pausado</option>
+            <option value="closed">Finalizado</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Substatus</label>
+          <select id="substatusFilter">
+            <option value="">Todos</option>
+            <option value="out_of_stock">Sem estoque</option>
+            <option value="waiting_for_patch">Moderação</option>
+            <option value="deleted">Deletado</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Categoria</label>
+          <input id="categoriaFilter" type="text" placeholder="Categoria...">
+        </div>
+
+        <div class="filter-group">
+          <label>Faixa de Preço (R$)</label>
+          <div class="range-2">
+            <input id="precoMinFilter" type="number" step="0.01" placeholder="Mín">
+            <input id="precoMaxFilter" type="number" step="0.01" placeholder="Máx">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Estoque</label>
+          <div class="range-2">
+            <input id="estoqueMinFilter" type="number" placeholder="Mín">
+            <input id="estoqueMaxFilter" type="number" placeholder="Máx">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Vendas</label>
+          <div class="range-2">
+            <input id="vendidosMinFilter" type="number" placeholder="Mín">
+            <input id="vendidosMaxFilter" type="number" placeholder="Máx">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Atualizados de… até…</label>
+          <div class="range-2">
+            <input id="dtIniFilter" type="date">
+            <input id="dtFimFilter" type="date">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Ordenar por</label>
+          <select id="ordenarFilter">
+            <option value="atualizado_desc">Mais recentes</option>
+            <option value="preco_asc">Menor preço</option>
+            <option value="preco_desc">Maior preço</option>
+            <option value="vendas_desc">Mais vendidos</option>
+            <option value="estoque_asc">Menor estoque</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Ads</label>
+          <select id="adsFilter">
+            <option value="">Todos</option>
+            <option value="with_ads">Com Ads</option>
+            <option value="without_ads">Sem Ads</option>
+          </select>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-outline" id="btnLimpar"><i class="ri-close-line"></i> Limpar</button>
+          <button class="btn btn-primary" id="btnAplicar"><i class="ri-search-line"></i> Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Barra de ações em lote -->
+  <div class="bulk-actions" id="bulkActions" style="display:none;">
+    <div class="bulk-info"><strong id="selectedCount">0</strong> selecionados</div>
+    <div class="bulk-buttons">
+      <button class="btn-success" id="btnAtivarSel"><i class="ri-play-line"></i> Ativar</button>
+      <button class="btn-warning" id="btnPausarSel"><i class="ri-pause-line"></i> Pausar</button>
+      <button class="btn-secondary" id="btnClonarSel"><i class="ri-file-copy-line"></i> Clonar</button>
+      <button class="btn-danger" id="btnExcluirSel"><i class="ri-delete-bin-line"></i> Excluir</button>
+    </div>
+  </div>
+
+  <!-- KPIs do render -->
+  <section class="kpis-inline" id="kpisInline" hidden>
+    <div class="kpi"><span class="kpi-label">Ativos</span><span class="kpi-value" id="kpiAtivos">0</span></div>
+    <div class="kpi"><span class="kpi-label">Pausados</span><span class="kpi-value" id="kpiPausados">0</span></div>
+    <div class="kpi"><span class="kpi-label">Finalizados</span><span class="kpi-value" id="kpiFinalizados">0</span></div>
+  </section>
+
+  <!-- Grid -->
+  <section class="anuncios-grid" id="anunciosGrid">
+    {% for a in anuncios %}
+    <article class="anuncio-card" data-id="{{ a.id_anuncio }}" data-status="{{ a.status|lower }}">
+      <div class="card-header">
+        <label class="chk"><input type="checkbox" class="anuncio-checkbox"></label>
+        <span class="status-badge status-{{ a.status|lower }}">{{ a.status|title }}</span>
+      </div>
+
+      <figure class="card-image">
+        <img
+  src="{{ a.url_imagem_principal or '/static/images/no-image.png' }}"
+  alt="{{ a.titulo }}"
+  width="320"
+  height="320"
+  loading="lazy"
+  style="image-rendering: high-quality; object-fit: contain;"
+  onerror="this.src='/static/images/no-image.png'">
+        <figcaption class="image-overlay">
+          <button class="overlay-btn" data-action="ver" title="Ver"><i class="ri-eye-line"></i></button>
+        </figcaption>
+      </figure>
+
+      <div class="card-content">
+        <h3 class="anuncio-titulo" title="{{ a.titulo }}">{{ a.titulo[:70] }}{% if a.titulo|length>70 %}...{% endif %}</h3>
+        <div class="anuncio-info">
+          <div class="info-row"><span class="label">Categoria:</span><span class="value">{{ a.id_categoria or 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Preço:</span><span class="value price">{{ a.preco_formatado or 'R$ %.2f'|format(a.preco or 0) }}</span></div>
+          <div class="info-row"><span class="label">Estoque:</span><span class="value">{{ a.quantidade_disponivel or 0 }}</span></div>
+          <div class="info-row"><span class="label">Vendidos:</span><span class="value success">{{ a.quantidade_vendida or 0 }}</span></div>
+        </div>
+        <div class="anuncio-meta"><small>Atualizado: {{ a.atualizado_em[:10] if a.atualizado_em else 'N/A' }}</small></div>
+      </div>
+
+      <div class="card-actions">
+        <div class="left-actions">
+          <button class="action-btn primary"  data-action="editar"   title="Editar"><i class="ri-edit-line"></i></button>
+          <button class="action-btn secondary" data-action="clonar"  title="Clonar"><i class="ri-file-copy-line"></i></button>
+          <button class="action-btn warning"   data-action="status"  title="Pausar/Ativar"><i class="ri-swap-line"></i></button>
+          <button class="action-btn danger"    data-action="excluir" title="Excluir"><i class="ri-delete-bin-line"></i></button>
+        </div>
+        <div class="action-dropdown">
+          <button class="action-btn" data-action="dropdown" title="Mais opções"><i class="ri-more-line"></i></button>
+          <div class="dropdown-menu">
+            <a href="#" data-action="quickedit"><i class="ri-pencil-ruler-2-line"></i> Edição Rápida</a>
+            <a href="#" data-action="analisar"><i class="ri-bar-chart-line"></i> Análise</a>
+            {% if a.link_permanente %}
+            <a href="{{ a.link_permanente }}" target="_blank"><i class="ri-external-link-line"></i> Ver no ML</a>
+            <a href="{{ a.link_permanente }}#questions" target="_blank"><i class="ri-question-answer-line"></i> Perguntas</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+
+  <!-- Paginação -->
+  <section class="pagination-section">
+    <div class="pagination-info">Mostrando <strong>{{ anuncios|length }}</strong> de <strong>{{ anuncios|length }}</strong></div>
+    <div class="pagination-controls">
+      <button class="btn btn-outline" {% if page<=1 %}disabled{% endif %} data-action="page-prev"><i class="ri-arrow-left-line"></i> Anterior</button>
+      <span class="page-info">Página {{ page }}</span>
+      <button class="btn btn-outline" data-action="page-next">Próxima <i class="ri-arrow-right-line"></i></button>
+    </div>
+  </section>
+</div>
+
+<!-- Modal: Edição rápida -->
+<div id="quickEditModal" class="modal-premium" style="display:none;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Edição rápida</h2>
+      <button class="modal-close" data-close="quickEditModal"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="quickEditForm">
+        <input type="hidden" id="qeId">
+        <div class="form-row-2">
+          <label>Preço (R$)<input type="number" step="0.01" id="qePreco"></label>
+          <label>Estoque<input type="number" id="qeEstoque"></label>
+        </div>
+        <label>Título<input type="text" id="qeTitulo"></label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="quickEditModal"><i class="ri-close-line"></i> Cancelar</button>
+      <button class="btn btn-primary" id="qeSalvar"><i class="ri-save-3-line"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer: Automações (UI pronta; backend opcional) -->
+<div id="automacoesDrawer" class="drawer" aria-hidden="true">
+  <div class="drawer-panel">
+    <div class="drawer-header">
+      <h2><i class="ri-robot-2-line"></i> Automações</h2>
+      <button class="drawer-close" data-close="automacoesDrawer"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="drawer-body">
+      <div class="auto-item">
+        <label class="switch"><input id="autoOutOfStock" type="checkbox"><span></span></label>
+        <div><strong>Pausar se estoque = 0</strong><p class="muted">Reativa automaticamente ao repor.</p></div>
+      </div>
+      <div class="auto-item">
+        <label class="switch"><input id="autoROAS" type="checkbox"><span></span></label>
+        <div>
+          <strong>Gerenciar Ads por ROAS</strong>
+          <p class="muted">Pausa anúncios com ROAS abaixo do alvo; sobe lance nos vencedores.</p>
+          <div class="form-row-2">
+            <label>ROAS mín.<input id="roasMin" type="number" step="0.01" placeholder="2.0"></label>
+            <label>ROAS máx.<input id="roasMax" type="number" step="0.01" placeholder="8.0"></label>
+          </div>
+        </div>
+      </div>
+      <div class="auto-item">
+        <label class="switch"><input id="autoPreco" type="checkbox"><span></span></label>
+        <div>
+          <strong>Regra de preço</strong>
+          <p class="muted">Mantém markup e faixa alvo automaticamente.</p>
+          <div class="form-row-2">
+            <label>Markup mín. (%)<input id="mkpMin" type="number" step="0.01" placeholder="15"></label>
+            <label>Markup máx. (%)<input id="mkpMax" type="number" step="0.01" placeholder="40"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-primary" id="autoSalvar"><i class="ri-save-3-line"></i> Salvar regras</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/vendas/ml/anuncios.js') }}"></script>
+{% endblock %}

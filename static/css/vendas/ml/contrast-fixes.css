@@ -1,0 +1,309 @@
+/* =================================================================== */
+/* CORREÇÕES DE CONTRASTE - FISGARONE ERP - COMPLETO */
+/* =================================================================== */
+
+:root {
+  /* Modo Claro */
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+
+  /* Cores Corporativas */
+  --primary: #1e40af;
+  --primary-dark: #1e3a8a;
+  --primary-light: #3b82f6;
+  --success: #059669;
+  --success-dark: #047857;
+  --warning: #d97706;
+  --error: #dc2626;
+  --info: #2563eb;
+}
+
+.dark-theme {
+  /* Modo Escuro */
+  --text-primary: #f9fafb;
+  --text-secondary: #e5e7eb;
+  --text-muted: #d1d5db;
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+  --border-light: #4b5563;
+  --border-medium: #6b7280;
+
+  /* Cores Corporativas - Modo Escuro */
+  --primary: #60a5fa;
+  --primary-dark: #3b82f6;
+  --primary-light: #93c5fd;
+  --success: #34d399;
+  --success-dark: #10b981;
+  --warning: #f59e0b;
+  --error: #f87171;
+  --info: #60a5fa;
+}
+
+/* 1. CORREÇÃO DO LOGO MERCADO LIVRE */
+.ml-brand img {
+    height: 40px !important;
+    width: auto !important;
+    max-width: 200px !important;
+    object-fit: contain !important;
+}
+
+.ml-title-wrap {
+    align-items: center !important;
+    gap: 1rem !important;
+}
+
+.ml-title {
+    font-size: 1.5rem !important;
+    background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+/* 2. CORREÇÕES DE TEXTO */
+.menu-link i,
+.menu-group-title,
+.kpi-label,
+.kpi-sub,
+.status-label,
+.stat-label,
+.detail-label,
+.metric-label,
+.field label {
+  color: var(--text-secondary) !important;
+}
+
+.dark-theme .menu-link i,
+.dark-theme .menu-group-title,
+.dark-theme .kpi-label,
+.dark-theme .kpi-sub,
+.dark-theme .status-label,
+.dark-theme .stat-label,
+.dark-theme .detail-label,
+.dark-theme .metric-label,
+.dark-theme .field label {
+  color: var(--text-muted) !important;
+}
+
+/* 3. CORREÇÕES DE FUNDO */
+.ml-page {
+  background-color: var(--bg-primary) !important;
+}
+
+.card,
+.kpi-card-advanced,
+.order-card-advanced {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+.dark-theme .ml-page {
+  background-color: var(--bg-primary) !important;
+}
+
+.dark-theme .card,
+.dark-theme .kpi-card-advanced,
+.dark-theme .order-card-advanced {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+/* 4. CORREÇÕES DE TEXTO PRINCIPAL */
+.card-header h3,
+.kpi-value,
+.order-card-advanced .detail-value,
+.order-card-advanced .metric-value {
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .card-header h3,
+.dark-theme .kpi-value,
+.dark-theme .order-card-advanced .detail-value,
+.dark-theme .order-card-advanced .metric-value {
+  color: var(--text-primary) !important;
+}
+
+/* 5. BOTÕES COM CONTRASTE */
+.btn.primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+  color: white !important;
+  border-color: var(--primary-dark) !important;
+}
+
+.btn.primary.outline {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  background: transparent !important;
+}
+
+.dark-theme .btn.primary.outline {
+  color: var(--primary-light) !important;
+  border-color: var(--primary-light) !important;
+}
+
+/* 6. BADGES COM CONTRASTE PERFEITO */
+.badge-success {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.badge-warning {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+
+.badge-danger {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+}
+
+.dark-theme .badge-success {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+  border: 1px solid #047857 !important;
+}
+
+.dark-theme .badge-warning {
+  background: #78350f !important;
+  color: #fcd34d !important;
+  border: 1px solid #d97706 !important;
+}
+
+.dark-theme .badge-danger {
+  background: #7f1d1d !important;
+  color: #fca5a5 !important;
+  border: 1px solid #dc2626 !important;
+}
+
+/* 7. INPUTS E FORMULÁRIOS */
+.field input,
+.field select {
+  background: var(--bg-primary) !important;
+  border: 2px solid var(--border-light) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .field input,
+.dark-theme .field select {
+  background: var(--bg-primary) !important;
+  border: 2px solid var(--border-light) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 8. ESTADOS DE FOCO */
+.btn:focus,
+.tab:focus,
+.chart-tab:focus,
+input:focus,
+select:focus {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+}
+
+.dark-theme .btn:focus,
+.dark-theme .tab:focus,
+.dark-theme .chart-tab:focus,
+.dark-theme input:focus,
+.dark-theme select:focus {
+  outline: 2px solid var(--primary-light) !important;
+}
+
+/* 9. CORREÇÕES PARA O ERP CENTRAL */
+
+/* Menu Lateral */
+.menu-group-title {
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+}
+
+.dark-theme .menu-group-title {
+    color: var(--text-muted) !important;
+}
+
+.menu-link {
+    color: var(--text-primary) !important;
+}
+
+.dark-theme .menu-link {
+    color: var(--text-primary) !important;
+}
+
+.menu-link:hover {
+    background: rgba(30, 64, 175, 0.1) !important;
+    color: var(--primary) !important;
+}
+
+/* Tabelas */
+.data-table {
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border-light) !important;
+}
+
+.data-table th {
+    background: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+}
+
+.data-table td {
+    color: var(--text-primary) !important;
+}
+
+.dark-theme .data-table th {
+    background: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+}
+
+.dark-theme .data-table td {
+    color: var(--text-primary) !important;
+}
+
+/* Formulários */
+.form-label {
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+}
+
+.dark-theme .form-label {
+    color: var(--text-muted) !important;
+}
+
+.form-control {
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border-light) !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-theme .form-control {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* 10. SCROLLBAR */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}

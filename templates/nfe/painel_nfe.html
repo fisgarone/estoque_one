@@ -1,0 +1,98 @@
+<!-- /templates/nfe/painel_nfe.html (VERSÃO COM DADOS RICOS) -->
+{% extends "base.html" %}
+
+{% block title %}Painel de NF-e{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estoque/inventario.css', v='14.0') }}">
+    <style>
+        .nfe-card {
+            background-color: #fff; border: 1px solid #eef2f7; border-radius: 12px;
+            margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .nfe-card-header {
+            padding: 15px 20px; border-bottom: 1px solid #eef2f7;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .nfe-card-body { padding: 0; }
+        .item-table { width: 100%; margin-bottom: 0; font-size: 0.9rem; }
+        .item-table th, .item-table td { padding: 12px 20px; text-align: left; }
+        .item-table th { background-color: #f8f9fa; }
+        .nfe-card.processed .nfe-card-header { background-color: #f0f0f0; }
+        .text-right { text-align: right !important; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container inventario-page">
+    <div class="main-content-container">
+        <div class="page-header">
+            <h1 class="page-title">Painel de Notas Fiscais de Entrada</h1>
+            <button class="btn-secondary" disabled><i class="ri-upload-2-line"></i> Fazer Upload (Em Breve)</button>
+        </div>
+        <p class="text-muted">Notas encontradas na pasta <code>pasta_xml/</code>. Processe-as para enviar os itens para o controle de estoque.</p>
+
+        {% if notas %}
+            {% for nota in notas %}
+            <div class="nfe-card {% if nota.status == 'Processado' %}processed{% endif %}">
+                <div class="nfe-card-header">
+                    <div>
+                        <!-- DADOS RICOS DO FORNECEDOR -->
+                        <strong>Fornecedor:</strong> {{ nota.fornecedor }}
+
+                        <small class="text-muted">
+                            <strong>CNPJ:</strong> {{ nota.cnpj_fornecedor }} |
+                            <strong>NF-e nº:</strong> {{ nota.numero }} |
+                            <strong>Emissão:</strong> {{ nota.data|datetimeformat }}
+                        </small>
+                    </div>
+                    <form action="{{ url_for('nfe.processar_xml', nome_arquivo=nota.nome_arquivo) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja processar esta NF-e?');">
+                        <button type="submit" class="btn btn-primary" {% if nota.status == 'Processado' %}disabled{% endif %}>
+                            <i class="ri-arrow-right-s-line"></i>
+                            {% if nota.status == 'Processado' %}Já Processado{% else %}Processar{% endif %}
+                        </button>
+                    </form>
+                </div>
+                <div class="nfe-card-body">
+                    <table class="table-professional item-table">
+                        <thead>
+                            <tr>
+                                <!-- NOVAS COLUNAS NA TABELA -->
+                                <th>Produto</th>
+                                <th>SKU</th>
+                                <th>NCM</th>
+                                <th class="text-right">Qtd.</th>
+                                <th>UN</th>
+                                <th class="text-right">Vl. Unit.</th>
+                                <th class="text-right">Vl. IPI</th>
+                                <th class="text-right">Vl. Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in nota.itens %}
+                            <tr>
+                                <!-- DADOS RICOS DO PRODUTO -->
+                                <td>{{ item.nome }}</td>
+                                <td>{{ item.sku }}</td>
+                                <td>{{ item.ncm }}</td>
+                                <td class="text-right">{{ item.qtd|int }}</td>
+                                <td>{{ item.un }}</td>
+                                <td class="text-right">{{ item.valor_unit|numberformat }}</td>
+                                <td class="text-right">{{ item.valor_ipi|numberformat }}</td>
+                                <td class="text-right">{{ item.valor_total|numberformat }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info text-center" style="padding: 40px;">
+                <h3>Nenhuma NF-e para processar.</h3>
+                <p>Adicione novos arquivos <code>.xml</code> na pasta <code>pasta_xml/</code>.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

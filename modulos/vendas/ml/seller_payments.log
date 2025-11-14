@@ -1,0 +1,11 @@
+2025-06-05 09:39:57,579 - INFO - Iniciando processo de sincronização de pagamentos do seller
+2025-06-05 09:39:57,592 - INFO - Banco de dados inicializado com sucesso
+2025-06-05 09:39:57,592 - INFO - Iniciando sincronização para conta TOYS
+2025-06-05 09:39:57,595 - INFO - Nenhum pedido encontrado para conta TOYS nos últimos 60 dias
+2025-06-05 09:39:57,596 - INFO - Iniciando sincronização para conta COMERCIAL
+2025-06-05 09:39:57,597 - INFO - Nenhum pedido encontrado para conta COMERCIAL nos últimos 60 dias
+2025-06-05 09:39:57,597 - INFO - Iniciando sincronização para conta PESCA
+2025-06-05 09:39:57,598 - INFO - Nenhum pedido encontrado para conta PESCA nos últimos 60 dias
+2025-06-05 09:39:57,599 - INFO - Iniciando sincronização para conta CAMPING
+2025-06-05 09:39:57,600 - INFO - Nenhum pedido encontrado para conta CAMPING nos últimos 60 dias
+2025-06-05 09:39:57,600 - INFO - Processo de sincronização concluído

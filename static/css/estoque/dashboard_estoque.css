@@ -1,0 +1,294 @@
+/* /static/css/estoque/dashboard_estoque.css */
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.dashboard-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboard-filters label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.filter-btn {
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--menu-border-light);
+    background-color: var(--menu-bg-light);
+    color: var(--text-light);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+}
+
+.dark-theme .filter-btn {
+    border-color: var(--menu-border-dark);
+    background-color: var(--menu-bg-dark);
+    color: var(--text-dark);
+}
+
+#edit-mode-toggle {
+    background: transparent;
+    border: 1px solid var(--primary-bright);
+    color: var(--primary-bright);
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+#edit-mode-toggle:hover, #edit-mode-toggle.active {
+    background: var(--primary-bright);
+    color: white;
+}
+
+.dark-theme #edit-mode-toggle {
+    border-color: var(--primary-dark);
+    color: var(--primary-dark);
+}
+
+.dark-theme #edit-mode-toggle:hover, .dark-theme #edit-mode-toggle.active {
+    background: var(--primary-dark);
+    color: var(--bg-dark);
+}
+
+.grid-stack-item-content {
+    background-color: var(--menu-bg-light);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow-light);
+    overflow: hidden;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.dark-theme .grid-stack-item-content {
+    background-color: var(--menu-bg-dark);
+    box-shadow: var(--card-shadow-dark);
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    height: 100%;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-light-contrast);
+}
+
+.dark-theme .card-header h3 {
+    color: var(--text-dark);
+}
+
+.card-body {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.card-icon i {
+    font-size: 2.5rem;
+    color: var(--primary-bright);
+}
+
+.dark-theme .card-icon i {
+    color: var(--primary-dark);
+}
+
+.card-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.chart-container, .alert-widget-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.chart-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.chart-body {
+    flex-grow: 1;
+    position: relative;
+}
+
+.alertas-lista {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Tooltips com IA */
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-icon {
+    cursor: pointer;
+    color: var(--primary-bright);
+    font-size: 1.1rem;
+}
+
+.dark-theme .tooltip-icon {
+    color: var(--primary-dark);
+}
+
+.tooltip-content {
+    visibility: hidden;
+    width: 280px;
+    background-color: var(--menu-bg-dark);
+    color: var(--text-dark);
+    text-align: left;
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+    position: absolute;
+    z-index: 10;
+    bottom: 125%;
+    right: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    box-shadow: var(--card-shadow-dark);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    border: 1px solid var(--primary-dark);
+}
+
+.dark-theme .tooltip-content {
+     background-color: var(--menu-bg-light);
+     color: var(--text-light);
+     box-shadow: var(--card-shadow-light);
+     border: 1px solid var(--primary-bright);
+}
+
+.tooltip-content strong {
+    color: var(--primary-dark);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.dark-theme .tooltip-content strong {
+    color: var(--primary-bright);
+}
+
+.tooltip-container:hover .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Animações */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Melhorias de responsividade */
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+/* Estados de loading */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* Melhorias para modo escuro */
+.dark-theme .status-badge.crítico {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #f8d7da;
+}
+
+.dark-theme .status-badge.alerta {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #fff3cd;
+}
+
+.dark-theme .status-badge.ok {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #d4edda;
+}
+
+.dark-theme .status-andamento {
+    background-color: rgba(13, 110, 253, 0.2);
+    color: #cfe2ff;
+}
+
+.dark-theme .status-concluido {
+    background-color: rgba(25, 135, 84, 0.2);
+    color: #d1e7dd;
+}
+
+
+/* ==================== FISGARONE – FIXES AVANÇADOS (NÃO-QUEBRANTES) ==================== */
+/* 1) Espaço real entre cards e próxima linha de widgets */
+.summary-cards-container { margin-bottom: 32px !important; }
+
+/* 2) Itens do GridStack sempre respeitam o conteúdo interno */
+.grid-stack-item-content { display: flex; flex-direction: column; }
+
+/* 3) Containers de gráficos preenchem a célula corretamente */
+.grid-stack-item-content.chart-container { min-height: 320px !important; }
+.chart-container { display: flex; flex-direction: column; height: 100%; position: relative; }
+.chart-container canvas { flex: 1 1 auto; width: 100% !important; height: 100% !important; min-height: 260px; }
+
+/* 4) Responsividade de widgets */
+@media (max-width: 992px) {
+  .grid-stack-item-content { padding: 16px !important; }
+  .widget-header { gap: 8px; flex-wrap: wrap; }
+}
+
+/* 5) Modo escuro consistente nos títulos e tabelas */
+.dark-theme .chart-title { color: var(--text-dark); }
+.dark-theme .dashboard-table tr:hover { background-color: rgba(255,255,255,0.06); }
