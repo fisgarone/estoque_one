@@ -98,6 +98,20 @@ REQ_COLS = ["sku", "descricao", "unidade_compra", "quantidade", "valor_unitario"
 OPT_COLS = ["ipi_percentual", "ncm", "cfop"]
 ALL_COLS = REQ_COLS + OPT_COLS
 
+import math  # se ainda não tiver esse import
+
+def _strip_safe(value) -> str:
+    """Converte valor para string limpa, tratando None/NaN."""
+    if value is None:
+        return ""
+    try:
+        if isinstance(value, float) and math.isnan(value):
+            return ""
+    except Exception:
+        pass
+    return str(value).strip()
+
+
 def _allowed_file(name: str) -> bool:
     return Path(name).suffix.lower() in ALLOWED_EXTENSIONS
 
@@ -107,24 +121,58 @@ def _now_iso() -> str:
 def _now_br() -> str:
     return datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S")
 
+import math  # garante que está no topo
+
 def _to_float_br(v, default=None):
+    """
+    Converte valores no formato BR (ex: '1.234,56', '7,5%', 'NaN') para float.
+    Garante que nunca retorna NaN nem infinito: volta sempre float válido ou default.
+    """
     if v is None:
         return default
+
+    # Se já for número
     if isinstance(v, (int, float)):
+        try:
+            if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                return default
+        except Exception:
+            pass
         return float(v)
+
     s = str(v).strip()
     if not s:
         return default
-    # aceita "5%" "1.234,56" "1234,56"
+
+    # Trata valores lixo
+    s_low = s.lower()
+    if s_low in ("nan", "none", "null", "-", "n/a"):
+        return default
+
+    # Remove '%'
     s = s.replace('%', '').strip()
+
+    # Converte formato BR -> padrão
     if s.count(',') == 1 and s.count('.') >= 1:
+        # exemplo: 1.234,56  -> 1234.56
         s = s.replace('.', '').replace(',', '.')
     elif s.count(',') == 1 and s.count('.') == 0:
+        # exemplo: 7,5 -> 7.5
         s = s.replace(',', '.')
+
     try:
-        return float(s)
+        num = float(s)
     except Exception:
         return default
+
+    try:
+        if math.isnan(num) or math.isinf(num):
+            return default
+    except Exception:
+        pass
+
+    return num
+
 
 def _move_to_processed(file_path: Path) -> Path:
     """
@@ -294,6 +342,8 @@ def _read_any_table(file_storage) -> pd.DataFrame:
     df = df[~df["sku"].fillna("").astype(str).str.strip().eq("")]
     return df[ALL_COLS]
 
+
+
 # ---------------------------------------------------------------------
 # ROTAS
 # ---------------------------------------------------------------------
@@ -401,30 +451,48 @@ def upload_planilha_json():
     f = request.files.get("planilha")
     if not f or not f.filename:
         return jsonify(ok=False, message="Envie a planilha (XLSX/CSV)."), 400
+
     try:
         df = _read_any_table(f)
         itens: List[Dict] = []
+
         for _, row in df.iterrows():
             sku = (row["sku"] or "").strip()
             desc = (row["descricao"] or "").strip()
             und  = (row["unidade_compra"] or "UN").strip().upper()
-            qtd  = _to_float_br(row["quantidade"], 0) or 0.0
-            vlu  = _to_float_br(row["valor_unitario"], 0) or 0.0
-            ipi  = _to_float_br(row["ipi_percentual"], 0) or 0.0
+
+            qtd = _to_float_br(row.get("quantidade"), 0.0)
+            vlu = _to_float_br(row.get("valor_unitario"), 0.0)
+            ipi = _to_float_br(row.get("ipi_percentual"), 0.0)
+
+            qtd = qtd or 0.0
+            vlu = vlu or 0.0
+            ipi = ipi or 0.0
+
+            # ignora linhas inválidas
             if not sku or not und or qtd <= 0 or vlu <= 0:
                 continue
+
             itens.append(dict(
-                sku=sku, descricao=desc, unidade_compra=und,
-                quantidade=float(qtd), valor_unitario=float(vlu),
+                sku=sku,
+                descricao=desc,
+                unidade_compra=und,
+                quantidade=float(qtd),
+                valor_unitario=float(vlu),
                 ipi_percentual=float(ipi),
-                ncm=(row.get("ncm") or "").strip(),
-                cfop=(row.get("cfop") or "").strip()
+                ncm=_strip_safe(row.get("ncm")),
+                cfop=_strip_safe(row.get("cfop")),
             ))
+
         if not itens:
-            return jsonify(ok=False, message="Planilha sem linhas válidas."), 400
-        return jsonify(ok=True, itens=itens, meta={"fonte":"planilha"}, warnings=[]), 200
+            return jsonify(ok=False, message="Nenhum item válido encontrado na planilha."), 400
+
+        return jsonify(ok=True, itens=itens)
+
     except Exception as e:
+        # log se tiver logger; mantendo padrão que você já usa
         return jsonify(ok=False, message=f"Erro ao ler planilha: {e}"), 400
+
 
 @bp_importador.post("/salvar")
 def salvar():

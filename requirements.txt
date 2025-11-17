@@ -3,3 +3,8 @@ flask_babel
 tzdata
 selenium
 aiohttp
+pandas
+requests
+schedule
+flask
+Flask

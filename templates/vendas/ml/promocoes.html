@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Promoções - ML{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vendas/ml/promocoes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Header do Dashboard -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">
+        <i class="ri-treasure-map-line"></i>
+        Dashboard de Promoções - Mercado Livre
+      </h1>
+      <p class="dashboard-subtitle">Análise avançada de performance e ROI das campanhas promocionais</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="refreshData">
+        <i class="ri-refresh-line"></i>
+        Atualizar Dados
+      </button>
+      <button class="btn btn-secondary" id="exportReport">
+        <i class="ri-download-line"></i>
+        Exportar
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Carregando dados de promoções...</p>
+  </div>
+
+  <!-- Grid de Métricas Principais -->
+  <div class="metrics-grid" id="metricsGrid" style="display: none;">
+    <div class="metric-card primary">
+      <div class="metric-icon">
+        <i class="ri-treasure-map-line"></i>
+      </div>
+      <div class="metric-content">
+        <h3 class="metric-value" id="totalPromotions">0</h3>
+        <p class="metric-label">Promoções Ativas</p>
+        <div class="metric-trend positive">
+          <i class="ri-arrow-up-line"></i>
+          <span>12% vs período anterior</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card success">
+      <div class="metric-icon">
+        <i class="ri-share-line"></i>
+      </div>
+      <div class="metric-content">
+        <h3 class="metric-value" id="sharedPromotions">0</h3>
+        <p class="metric-label">Promoções Compartilhadas</p>
+        <div class="metric-trend positive">
+          <i class="ri-arrow-up-line"></i>
+          <span>8% vs período anterior</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card warning">
+      <div class="metric-icon">
+        <i class="ri-shopping-cart-line"></i>
+      </div>
+      <div class="metric-content">
+        <h3 class="metric-value" id="totalOrders">0</h3>
+        <p class="metric-label">Pedidos com Desconto</p>
+        <div class="metric-trend positive">
+          <i class="ri-arrow-up-line"></i>
+          <span>15% vs período anterior</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card danger">
+      <div class="metric-icon">
+        <i class="ri-coupon-line"></i>
+      </div>
+      <div class="metric-content">
+        <h3 class="metric-value" id="totalDiscounts">R$ 0</h3>
+        <p class="metric-label">Descontos Aplicados</p>
+        <div class="metric-trend negative">
+          <i class="ri-arrow-down-line"></i>
+          <span>5% vs período anterior</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card info">
+      <div class="metric-icon">
+        <i class="ri-line-chart-line"></i>
+      </div>
+      <div class="metric-content">
+        <h3 class="metric-value" id="roiValue">0%</h3>
+        <p class="metric-label">ROI das Promoções</p>
+        <div class="metric-trend positive">
+          <i class="ri-arrow-up-line"></i>
+          <span>3% vs período anterior</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card secondary">
+      <div class="metric-icon">
+        <i class="ri-percent-line"></i>
+      </div>
+      <div class="metric-content">
+        <h3 class="metric-value" id="discountRate">0%</h3>
+        <p class="metric-label">Taxa de Desconto</p>
+        <div class="metric-trend neutral">
+          <i class="ri-minus-line"></i>
+          <span>Estável</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros Avançados -->
+  <div class="filters-section" id="filtersSection" style="display: none;">
+    <div class="filters-header">
+      <h3><i class="ri-filter-line"></i> Filtros Avançados</h3>
+    </div>
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label class="filter-label">Período</label>
+        <select class="filter-select" id="dateRangeFilter">
+          <option value="7d">Últimos 7 dias</option>
+          <option value="30d" selected>Últimos 30 dias</option>
+          <option value="90d">Últimos 90 dias</option>
+          <option value="1y">Último ano</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Tipo de Promoção</label>
+        <select class="filter-select" id="promotionTypeFilter">
+          <option value="all">Todos os tipos</option>
+          <option value="STANDARD">Standard</option>
+          <option value="FLASH">Flash Sale</option>
+          <option value="VIP">VIP</option>
+          <option value="SUPER">Super</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Status</label>
+        <select class="filter-select" id="statusFilter">
+          <option value="all">Todos</option>
+          <option value="active">Ativas</option>
+          <option value="upcoming">Futuras</option>
+          <option value="expired">Expiradas</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Buscar</label>
+        <input type="text" class="filter-input" id="searchFilter" placeholder="Nome da promoção ou tipo...">
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-secondary" id="clearFilters">
+        <i class="ri-close-line"></i> Limpar Filtros
+      </button>
+      <button class="btn btn-primary" id="applyFilters">
+        <i class="ri-search-line"></i> Aplicar Filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid de Visualizações -->
+  <div class="visualization-grid" id="visualizationGrid" style="display: none;">
+    <!-- Gráfico de Vendas vs Descontos -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <h3>Evolução de Vendas vs Descontos</h3>
+        <div class="chart-actions">
+          <button class="btn-icon" onclick="dashboard.toggleChartType('salesChart')">
+            <i class="ri-bar-chart-line"></i>
+          </button>
+          <button class="btn-icon" onclick="dashboard.exportChart('salesChart')">
+            <i class="ri-download-line"></i>
+          </button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="salesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Distribuição de Tipos de Promoção -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Tipos de Promoção</h3>
+        <div class="chart-actions">
+          <button class="btn-icon" onclick="dashboard.toggleChartType('promotionTypesChart')">
+            <i class="ri-pie-chart-line"></i>
+          </button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="promotionTypesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Performance por Categoria -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Performance por Categoria</h3>
+        <div class="chart-actions">
+          <button class="btn-icon" onclick="dashboard.toggleChartType('performanceChart')">
+            <i class="ri-bar-chart-horizontal-line"></i>
+          </button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="performanceChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs de Visualização -->
+  <div class="view-tabs-container" id="viewTabsContainer" style="display: none;">
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="cards">
+        <i class="ri-grid-line"></i> Cards
+      </button>
+      <button class="view-tab" data-view="list">
+        <i class="ri-list-check"></i> Lista
+      </button>
+      <button class="view-tab" data-view="table">
+        <i class="ri-table-line"></i> Tabela
+      </button>
+    </div>
+  </div>
+
+  <!-- Conteúdo das Visualizações -->
+  <div id="contentViews" style="display: none;">
+    <!-- Cards View -->
+    <div id="cardsView" class="cards-view"></div>
+
+    <!-- List View -->
+    <div id="listView" class="list-view" style="display: none;"></div>
+
+    <!-- Table View -->
+    <div id="tableView" class="table-view" style="display: none;">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Promoções - Visualização em Tabela</h3>
+          <div class="table-actions">
+            <input type="text" class="search-input" id="tableSearch" placeholder="Buscar promoções...">
+            <button class="btn-icon" onclick="dashboard.exportTable()">
+              <i class="ri-download-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table id="promotionsTable">
+            <thead>
+              <tr>
+                <th>Nome da Promoção</th>
+                <th>Tipo</th>
+                <th>Início</th>
+                <th>Término</th>
+                <th>Status</th>
+                <th>Itens</th>
+                <th>ML Compartilha</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="promotionsTableBody">
+              <!-- Dados serão carregados via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights de IA -->
+  <div class="ai-insights" id="aiInsights" style="display: none;">
+    <div class="insights-header">
+      <h3>
+        <i class="ri-brain-line"></i>
+        Insights de IA - Otimização de Promoções
+      </h3>
+    </div>
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="insight-icon opportunity">
+          <i class="ri-lightbulb-flash-line"></i>
+        </div>
+        <div class="insight-content">
+          <h4>Oportunidade Identificada</h4>
+          <p id="opportunityText">Analisando padrões de vendas...</p>
+          <div class="insight-metrics">
+            <span class="metric-tag">Potencial: <strong id="opportunityPotential">0%</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-icon alert">
+          <i class="ri-alert-line"></i>
+        </div>
+        <div class="insight-content">
+          <h4>Alerta de Performance</h4>
+          <p id="alertText">Monitorando eficácia das promoções...</p>
+          <div class="insight-metrics">
+            <span class="metric-tag">Impacto: <strong id="alertImpact">0%</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-icon recommendation">
+          <i class="ri-magic-line"></i>
+        </div>
+        <div class="insight-content">
+          <h4>Recomendação Automática</h4>
+          <p id="recommendationText">Gerando sugestões personalizadas...</p>
+          <div class="insight-actions">
+            <button class="btn-sm btn-primary" onclick="dashboard.aplicarRecomendacao()">Aplicar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div id="detailModal" class="modal-premium">
+  <div class="modal-container large">
+    <div class="modal-header">
+      <h2 id="detailModalTitle">Detalhes da Promoção</h2>
+      <button class="modal-close" onclick="dashboard.fecharModalDetalhes()">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+    <div class="modal-body" id="detailModalContent">
+      <!-- Conteúdo será carregado dinamicamente -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="dashboard.fecharModalDetalhes()">
+        <i class="ri-close-line"></i> Fechar
+      </button>
+      <button class="btn btn-primary" onclick="dashboard.exportPromotionDetails()">
+        <i class="ri-download-line"></i> Exportar Detalhes
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Passar dados do Flask para o JavaScript
+window.dashboardData = {
+    totalPromotions: {{ total_promotions|default(0) }},
+    sharedPromotions: {{ shared_promotions|default(0) }},
+    totalOrders: {{ total_orders|default(0) }},
+    ordersWithDiscount: {{ orders_with_discount|default(0) }},
+    totalSales: {{ total_sales|default(0) }},
+    totalDiscounts: {{ total_discounts|default(0) }},
+    avgDiscount: {{ avg_discount|default(0) }},
+    avgOrderValue: {{ avg_order_value|default(0) }},
+    roi: {{ roi|default(0) }},
+    discountRate: {{ discount_rate|default(0) }},
+    salesDates: {{ sales_dates|tojson|default('[]') }},
+    salesAmounts: {{ sales_amounts|tojson|default('[]') }},
+    discountDates: {{ discount_dates|tojson|default('[]') }},
+    discountAmounts: {{ discount_amounts|tojson|default('[]') }},
+    promLabels: {{ prom_labels|tojson|default('[]') }},
+    promCounts: {{ prom_counts|tojson|default('[]') }},
+    promotionsTable: {{ promotions_table|tojson|default('[]') }},
+    ordersTable: {{ orders_table|tojson|default('[]') }}
+};
+console.log('Dados do Flask carregados:', window.dashboardData);
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/vendas/ml/promocoes.js') }}"></script>
+{% endblock %}

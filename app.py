@@ -74,6 +74,9 @@ def _register_blueprints(app):
     app.register_blueprint(dashboard_vendas_bp, url_prefix='/vendas')
     app.register_blueprint(shopee_bp, url_prefix='/modulos/vendas/shopee')
 
+    from modulos.vendas.ml.promocoes_ml import promocoes_ml_bp
+    app.register_blueprint(promocoes_ml_bp, url_prefix='/vendas/ml')
+
 
 def _initialize_services(app):
     """Inicializa serviços em background"""
